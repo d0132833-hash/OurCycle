@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { CalendarDays, Heart, Settings, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import { flushQueue, queueSize } from '@/lib/client/offline-queue'
@@ -52,7 +52,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4">
       <RegisterSW />
-      <header className="sticky top-0 z-30 -mx-4 px-4 pt-4 pb-2 bg-gradient-to-b from-[#FDF2F4ee] via-[#FDF2F4cc] to-transparent dark:from-[#181514ee] dark:via-[#181514cc] dark:to-transparent backdrop-blur-[2px]">
+      <header className="sticky top-0 z-30 -mx-4 px-4 pt-4 pb-3 bg-[#FDF2F4]/95 dark:bg-[#181514]/95 backdrop-blur-md border-b border-border/40 transition-colors">
         <div className="flex items-center gap-2">
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
             <Heart className="h-5 w-5 text-primary" fill="currentColor" aria-hidden />
@@ -61,18 +61,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <AnimatePresence mode="wait">
-        <motion.main
-          key={pathname}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -6 }}
-          transition={{ duration: 0.18, ease: 'easeOut' }}
-          className="flex-1 pb-28"
-        >
-          {children}
-        </motion.main>
-      </AnimatePresence>
+      <motion.main
+        key={pathname}
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.15, ease: 'easeOut' }}
+        className="flex-1 pb-36"
+      >
+        {children}
+      </motion.main>
 
       <nav
         aria-label="Main navigation"

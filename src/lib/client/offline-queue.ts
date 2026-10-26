@@ -73,10 +73,6 @@ export async function saveWithOfflineFallback(
     }
     if (!res.ok) {
       const body = (await res.json().catch(() => null)) as { error?: string } | null
-      // 409 = already exists / 400 = invalid — don't retry these
-      if (res.status === 409 || res.status === 400) {
-        return 'online'
-      }
       throw new Error(body?.error ?? `Request failed (${res.status})`)
     }
     return 'online'

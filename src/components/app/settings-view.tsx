@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import { toast } from 'sonner'
@@ -45,8 +45,8 @@ import {
   Sun,
   Trash2,
   Monitor,
-  Calendar,
   AlertTriangle,
+  Plus,
 } from 'lucide-react'
 import type { AppSettings, PeriodEpisode } from '@/lib/types'
 import { RotateForm } from './vault-forms'
@@ -82,6 +82,11 @@ export function SettingsView({
 }: Props) {
   const router = useRouter()
   const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+  const activeTheme = mounted ? theme : undefined
 
   const [overrideOn, setOverrideOn] = useState(settings.cycle_length_override !== null)
   const [overrideLen, setOverrideLen] = useState(settings.cycle_length_override ?? 28)
@@ -99,6 +104,53 @@ export function SettingsView({
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [resetDialogOpen, setResetDialogOpen] = useState(false)
   const [resetting, setResetting] = useState(false)
+
+  // Add period state
+  const [addModalOpen, setAddModalOpen] = useState(false)
+  const [addStartDate, setAddStartDate] = useState('')
+  const [addEndDate, setAddEndDate] = useState('')
+  const [addFlow, setAddFlow] = useState<string>('medium')
+  const [savingAdd, setSavingAdd] = useState(false)
+
+  async function saveNewPeriod() {
+    if (!addStartDate) {
+      toast.error('Start date is required')
+      return
+    }
+    if (addEndDate && addEndDate < addStartDate) {
+      toast.error('End date cannot be before start date')
+      return
+    }
+    setSavingAdd(true)
+    try {
+      const res = await fetch('/api/periods', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          start_date: addStartDate,
+          end_date: addEndDate || null,
+          flow: addFlow || 'medium',
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        throw new Error(data?.error ?? 'Could not add period')
+      }
+      const data = await res.json()
+      setPeriods((prev) =>
+        [...prev, data.period].sort((a, b) => a.start_date.localeCompare(b.start_date)),
+      )
+      setAddModalOpen(false)
+      setAddStartDate('')
+      setAddEndDate('')
+      toast.success('Period added — predictions updated')
+      router.refresh()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Error adding period')
+    } finally {
+      setSavingAdd(false)
+    }
+  }
 
   async function patch(body: Record<string, unknown>, savingSetter?: (v: boolean) => void) {
     try {
@@ -246,27 +298,27 @@ export function SettingsView({
           <div className="grid grid-cols-3 gap-2">
             <Button
               type="button"
-              variant={theme === 'light' ? 'default' : 'outline'}
+              variant={activeTheme === 'light' ? 'default' : 'outline'}
               onClick={() => setTheme('light')}
-              className={`rounded-xl text-xs h-10 ${theme === 'light' ? 'bg-primary text-primary-foreground' : ''}`}
+              className={`rounded-xl text-xs h-10 ${activeTheme === 'light' ? 'bg-primary text-primary-foreground' : ''}`}
             >
               <Sun className="mr-1.5 h-3.5 w-3.5" />
               Light
             </Button>
             <Button
               type="button"
-              variant={theme === 'dark' ? 'default' : 'outline'}
+              variant={activeTheme === 'dark' ? 'default' : 'outline'}
               onClick={() => setTheme('dark')}
-              className={`rounded-xl text-xs h-10 ${theme === 'dark' ? 'bg-primary text-primary-foreground' : ''}`}
+              className={`rounded-xl text-xs h-10 ${activeTheme === 'dark' ? 'bg-primary text-primary-foreground' : ''}`}
             >
               <Moon className="mr-1.5 h-3.5 w-3.5" />
               Dark
             </Button>
             <Button
               type="button"
-              variant={theme === 'system' ? 'default' : 'outline'}
+              variant={activeTheme === 'system' ? 'default' : 'outline'}
               onClick={() => setTheme('system')}
-              className={`rounded-xl text-xs h-10 ${theme === 'system' ? 'bg-primary text-primary-foreground' : ''}`}
+              className={`rounded-xl text-xs h-10 ${activeTheme === 'system' ? 'bg-primary text-primary-foreground' : ''}`}
             >
               <Monitor className="mr-1.5 h-3.5 w-3.5" />
               System
@@ -334,10 +386,24 @@ export function SettingsView({
             <div>
               <h3 className="font-display text-base font-semibold">Period history</h3>
               <p className="text-sm text-muted-foreground">
-                Review and edit past period records.
+                Review, add, and edit past period records.
               </p>
             </div>
-            <Calendar className="h-4 w-4 text-primary" />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setAddStartDate('')
+                setAddEndDate('')
+                setAddFlow('medium')
+                setAddModalOpen(true)
+              }}
+              className="h-8 rounded-xl border-primary/25 bg-white/50 text-xs font-semibold text-primary hover:bg-primary/10 dark:bg-zinc-800/50"
+            >
+              <Plus className="mr-1 h-3.5 w-3.5" />
+              Add period
+            </Button>
           </div>
 
           <div className="mt-3 space-y-2 max-h-56 overflow-y-auto pr-1 nice-scroll">
@@ -569,6 +635,70 @@ export function SettingsView({
               className="flex-1 rounded-xl bg-primary text-primary-foreground text-xs"
             >
               {savingEdit ? 'Saving…' : 'Save changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Period Dialog */}
+      <Dialog open={addModalOpen} onOpenChange={setAddModalOpen}>
+        <DialogContent className="max-w-xs rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-display text-lg">Add period</DialogTitle>
+            <DialogDescription className="text-xs">
+              Log a past period. Cycle predictions and rhythms will recalculate automatically.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2 text-sm">
+            <div>
+              <Label className="text-xs text-muted-foreground">Start date</Label>
+              <Input
+                type="date"
+                value={addStartDate}
+                onChange={(e) => setAddStartDate(e.target.value)}
+                className="mt-1 h-9 rounded-xl text-xs"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">End date (optional)</Label>
+              <Input
+                type="date"
+                value={addEndDate}
+                onChange={(e) => setAddEndDate(e.target.value)}
+                className="mt-1 h-9 rounded-xl text-xs"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Flow</Label>
+              <Select value={addFlow} onValueChange={setAddFlow}>
+                <SelectTrigger className="mt-1 h-9 rounded-xl text-xs">
+                  <SelectValue placeholder="Flow" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="spotting">Spotting</SelectItem>
+                  <SelectItem value="light">Light</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="heavy">Heavy</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter className="flex-row gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => setAddModalOpen(false)}
+              className="flex-1 rounded-xl text-xs"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={saveNewPeriod}
+              disabled={savingAdd}
+              className="flex-1 rounded-xl bg-primary text-primary-foreground text-xs"
+            >
+              {savingAdd ? 'Saving…' : 'Add period'}
             </Button>
           </DialogFooter>
         </DialogContent>

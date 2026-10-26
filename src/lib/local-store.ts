@@ -45,35 +45,36 @@ export class LocalFileStore implements Store {
 
   constructor(filePath?: string) {
     this.filePath = filePath || path.join(process.cwd(), '.data', 'db.json')
+    if (this.filePath === ':memory:') {
+      this.memData = structuredClone(DEFAULT_DB)
+    }
   }
 
   private read(): DatabaseSchema {
-    if (this.memData) {
-      return this.memData
+    if (this.filePath === ':memory:') {
+      return this.memData || structuredClone(DEFAULT_DB)
     }
     try {
       if (!fs.existsSync(this.filePath)) {
-        this.memData = structuredClone(DEFAULT_DB)
-        return this.memData
+        return structuredClone(DEFAULT_DB)
       }
       const raw = fs.readFileSync(this.filePath, 'utf-8')
       const parsed = JSON.parse(raw)
-      this.memData = {
+      return {
         ...structuredClone(DEFAULT_DB),
         ...parsed,
         settings: { ...DEFAULT_DB.settings, ...(parsed.settings || {}) },
       }
-      return this.memData
     } catch {
-      if (!this.memData) {
-        this.memData = structuredClone(DEFAULT_DB)
-      }
-      return this.memData
+      return structuredClone(DEFAULT_DB)
     }
   }
 
   private write(data: DatabaseSchema): void {
-    this.memData = data
+    if (this.filePath === ':memory:') {
+      this.memData = data
+      return
+    }
     try {
       const dir = path.dirname(this.filePath)
       if (!fs.existsSync(dir)) {
@@ -81,7 +82,7 @@ export class LocalFileStore implements Store {
       }
       fs.writeFileSync(this.filePath, JSON.stringify(data, null, 2), 'utf-8')
     } catch {
-      // Memory fallback if filesystem write fails
+      // Ignore write errors in restricted envs
     }
   }
 

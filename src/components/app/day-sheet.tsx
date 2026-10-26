@@ -177,132 +177,130 @@ export function DaySheet({ date, entry, open, onOpenChange }: Props) {
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="mx-auto max-w-md">
-        <DrawerHeader className="pb-2">
+      <DrawerContent className="mx-auto max-w-md max-h-[92dvh] flex flex-col">
+        <DrawerHeader className="shrink-0 pb-2">
           <DrawerTitle className="font-display text-xl">
             {date ? fmtShort(date) : 'Log day'}
           </DrawerTitle>
           <DrawerDescription>Everything is private — only your vault can see this.</DrawerDescription>
         </DrawerHeader>
 
-        <ScrollArea className="nice-scroll max-h-[min(650px,78dvh)] px-4 pb-2">
-          <div className="space-y-5 pb-4">
-            {/* Flow */}
-            <section>
-              <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Flow</h3>
-              <div className="flex flex-wrap gap-2">
-                {DAY_FLOWS.map((f) => (
-                  <button
-                    key={f}
-                    type="button"
-                    onClick={() => set('flow', draft.flow === f ? null : f)}
-                    className={`chip ${draft.flow === f ? 'chip-selected' : ''}`}
-                  >
-                    {FLOW_LABEL[f]}
-                  </button>
-                ))}
-              </div>
-            </section>
+        <div className="nice-scroll flex-1 min-h-0 overflow-y-auto px-4 pb-4 space-y-5">
+          {/* Flow */}
+          <section>
+            <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Flow</h3>
+            <div className="flex flex-wrap gap-2">
+              {DAY_FLOWS.map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => set('flow', draft.flow === f ? null : f)}
+                  className={`chip ${draft.flow === f ? 'chip-selected' : ''}`}
+                >
+                  {FLOW_LABEL[f]}
+                </button>
+              ))}
+            </div>
+          </section>
 
-            {/* Mood / Energy / Libido */}
-            <section>
-              <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Mood</h3>
-              <Scale emojis={MOOD_EMOJI} value={draft.mood} onChange={(v) => set('mood', v)} />
-            </section>
-            <section>
-              <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Energy</h3>
-              <Scale emojis={ENERGY_EMOJI} value={draft.energy} onChange={(v) => set('energy', v)} />
-            </section>
-            <section>
-              <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Sex drive</h3>
-              <Scale emojis={LIBIDO_EMOJI} value={draft.libido} onChange={(v) => set('libido', v)} />
-            </section>
+          {/* Mood / Energy / Libido */}
+          <section>
+            <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Mood</h3>
+            <Scale emojis={MOOD_EMOJI} value={draft.mood} onChange={(v) => set('mood', v)} />
+          </section>
+          <section>
+            <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Energy</h3>
+            <Scale emojis={ENERGY_EMOJI} value={draft.energy} onChange={(v) => set('energy', v)} />
+          </section>
+          <section>
+            <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Sex drive</h3>
+            <Scale emojis={LIBIDO_EMOJI} value={draft.libido} onChange={(v) => set('libido', v)} />
+          </section>
 
-            {/* Symptoms */}
-            <section>
-              <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
-                Pain &amp; symptoms
-              </h3>
-              <div className="space-y-2.5">
-                {SYMPTOM_KEYS.map((s) => (
-                  <div key={s} className="flex items-center justify-between gap-3">
-                    <span className="w-36 shrink-0 text-sm">{SYMPTOM_LABELS[s]}</span>
-                    <div className="flex gap-1.5">
-                      {[0, 1, 2, 3].map((lvl) => {
-                        const selected = (draft[s] ?? 0) === lvl && draft[s] !== null
-                        return (
-                          <button
-                            key={lvl}
-                            type="button"
-                            aria-label={`${SYMPTOM_LABELS[s]}: ${INTENSITY_LABEL[lvl]}`}
-                            onClick={() => set(s, lvl === 0 ? null : lvl)}
-                            className={`flex h-9 w-9 items-center justify-center rounded-full border text-xs transition-colors ${
-                              selected
-                                ? 'border-transparent bg-primary text-primary-foreground shadow-sm'
-                                : 'border-[rgba(225,29,72,0.16)] bg-white/65 text-muted-foreground dark:bg-zinc-800/60 dark:border-zinc-700'
-                            }`}
-                          >
-                            {INTENSITY[lvl]}
-                          </button>
-                        )
-                      })}
-                    </div>
+          {/* Symptoms */}
+          <section>
+            <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
+              Pain &amp; symptoms
+            </h3>
+            <div className="space-y-2.5">
+              {SYMPTOM_KEYS.map((s) => (
+                <div key={s} className="flex items-center justify-between gap-3">
+                  <span className="w-36 shrink-0 text-sm">{SYMPTOM_LABELS[s]}</span>
+                  <div className="flex gap-1.5">
+                    {[0, 1, 2, 3].map((lvl) => {
+                      const selected = (draft[s] ?? 0) === lvl && draft[s] !== null
+                      return (
+                        <button
+                          key={lvl}
+                          type="button"
+                          aria-label={`${SYMPTOM_LABELS[s]}: ${INTENSITY_LABEL[lvl]}`}
+                          onClick={() => set(s, lvl === 0 ? null : lvl)}
+                          className={`flex h-9 w-9 items-center justify-center rounded-full border text-xs transition-colors ${
+                            selected
+                              ? 'border-transparent bg-primary text-primary-foreground shadow-sm'
+                              : 'border-[rgba(225,29,72,0.16)] bg-white/65 text-muted-foreground dark:bg-zinc-800/60 dark:border-zinc-700'
+                          }`}
+                        >
+                          {INTENSITY[lvl]}
+                        </button>
+                      )
+                    })}
                   </div>
-                ))}
-              </div>
-            </section>
+                </div>
+              ))}
+            </div>
+          </section>
 
-            {/* Optional BBT & Weight */}
-            <section className="grid grid-cols-2 gap-3 pt-1">
-              <div>
-                <label className="mb-1 block text-xs font-semibold text-muted-foreground">
-                  Body Temp (°C/°F)
-                </label>
-                <Input
-                  type="number"
-                  step="0.05"
-                  placeholder="e.g. 36.6 or 97.8"
-                  value={draft.bbt}
-                  onChange={(e) => set('bbt', e.target.value)}
-                  className="rounded-xl border-[rgba(225,29,72,0.16)] bg-white/70 text-sm dark:bg-zinc-900/60"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-semibold text-muted-foreground">
-                  Weight (kg/lbs)
-                </label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  placeholder="e.g. 62.5"
-                  value={draft.weight}
-                  onChange={(e) => set('weight', e.target.value)}
-                  className="rounded-xl border-[rgba(225,29,72,0.16)] bg-white/70 text-sm dark:bg-zinc-900/60"
-                />
-              </div>
-            </section>
-
-            {/* Journal */}
-            <section>
-              <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Journal note</h3>
-              <Textarea
-                value={draft.note}
-                onChange={(e) => set('note', e.target.value)}
-                placeholder="Anything you want to remember about today…"
-                className="min-h-20 rounded-xl border-[rgba(225,29,72,0.16)] bg-white/70 dark:bg-zinc-900/60"
-                maxLength={4000}
+          {/* Optional BBT & Weight */}
+          <section className="grid grid-cols-2 gap-3 pt-1">
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-muted-foreground">
+                Body Temp (°C/°F)
+              </label>
+              <Input
+                type="number"
+                step="0.05"
+                placeholder="e.g. 36.6 or 97.8"
+                value={draft.bbt}
+                onChange={(e) => set('bbt', e.target.value)}
+                className="rounded-xl border-[rgba(225,29,72,0.16)] bg-white/70 text-sm dark:bg-zinc-900/60"
               />
-            </section>
-          </div>
-        </ScrollArea>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-muted-foreground">
+                Weight (kg/lbs)
+              </label>
+              <Input
+                type="number"
+                step="0.1"
+                placeholder="e.g. 62.5"
+                value={draft.weight}
+                onChange={(e) => set('weight', e.target.value)}
+                className="rounded-xl border-[rgba(225,29,72,0.16)] bg-white/70 text-sm dark:bg-zinc-900/60"
+              />
+            </div>
+          </section>
 
-        <div className="safe-bottom flex items-center gap-2 border-t border-border/60 px-4 py-3">
+          {/* Journal */}
+          <section>
+            <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Journal note</h3>
+            <Textarea
+              value={draft.note}
+              onChange={(e) => set('note', e.target.value)}
+              placeholder="Anything you want to remember about today…"
+              className="min-h-20 rounded-xl border-[rgba(225,29,72,0.16)] bg-white/70 dark:bg-zinc-900/60"
+              maxLength={4000}
+            />
+          </section>
+        </div>
+
+        <div className="safe-bottom shrink-0 flex items-center gap-2 border-t border-border/60 px-4 py-3 bg-background z-10">
           {entry ? (
             <Button
               variant="ghost"
               onClick={clear}
               disabled={saving}
-              className="text-muted-foreground"
+              className="text-muted-foreground hover:text-rose-600"
             >
               Clear
             </Button>
@@ -310,7 +308,7 @@ export function DaySheet({ date, entry, open, onOpenChange }: Props) {
           <Button
             onClick={save}
             disabled={saving || !dirty}
-            className="ml-auto h-11 flex-1 rounded-full bg-primary text-base font-semibold text-primary-foreground shadow-md transition-transform active:scale-95"
+            className="ml-auto h-11 flex-1 rounded-full bg-primary text-base font-semibold text-primary-foreground shadow-md transition-transform active:scale-95 disabled:opacity-50"
           >
             {saving ? 'Saving…' : 'Save day'}
           </Button>

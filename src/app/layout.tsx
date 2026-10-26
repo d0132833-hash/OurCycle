@@ -55,7 +55,7 @@ export default function RootLayout({
       >
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           {children}
-          <Toaster position="top-center" richColors />
+          <Toaster position="top-center" richColors offset="72px" />
         </ThemeProvider>
       </body>
     </html>

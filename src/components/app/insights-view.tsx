@@ -40,7 +40,7 @@ interface Props {
   days: DayEntry[]
   prediction: Prediction
   accuracy: AccuracyReport
-  phaseMap: Record<string, Phase>
+  phaseMap?: Record<string, Phase>
 }
 
 const PHASES: Phase[] = ['menstrual', 'follicular', 'ovulation', 'luteal']
@@ -72,7 +72,7 @@ export function InsightsView({
   days,
   prediction,
   accuracy,
-  phaseMap,
+  phaseMap = {},
 }: Props) {
   // 1) Libido by phase
   const libidoData = useMemo(() => {
@@ -84,7 +84,7 @@ export function InsightsView({
     }
     for (const d of days) {
       if (d.libido === null || d.libido === undefined) continue
-      const p = phaseMap[d.date]
+      const p = phaseMap?.[d.date]
       if (!p) continue
       counts[p].sum += d.libido
       counts[p].n += 1
@@ -115,7 +115,7 @@ export function InsightsView({
       'fatigue',
     ]
     for (const d of days) {
-      const p = phaseMap[d.date]
+      const p = phaseMap?.[d.date]
       if (!p) continue
       const hasAny = symptoms.some((s) => (d[s] ?? 0) > 0)
       if (hasAny) perPhase[p] += 1

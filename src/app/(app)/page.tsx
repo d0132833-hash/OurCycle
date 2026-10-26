@@ -98,16 +98,22 @@ export default async function TodayPage() {
 
         <div className="mt-4 flex flex-wrap justify-center gap-2">
           {prediction.nextPeriodStart && !prediction.bleedingToday && !prediction.irregular ? (
-            <span className="chip text-[#9F1239]">
+            <span className="chip text-[#9F1239] dark:text-rose-300">
               Next period {fmtShort(prediction.nextPeriodStart)}
             </span>
           ) : null}
-          {pms ? <span className="chip bg-[#FFF7ED] text-[#9A3412]">{pms}</span> : null}
+          {pms ? (
+            <span className="chip bg-[#FFF7ED] text-[#9A3412] dark:bg-amber-950/40 dark:text-amber-300">
+              {pms}
+            </span>
+          ) : null}
           {fertile ? (
-            <span className="chip bg-[#FDBA74]/25 text-[#9A3412]">{fertile} · estimate</span>
+            <span className="chip bg-[#FDBA74]/25 text-[#9A3412] dark:bg-amber-950/40 dark:text-amber-300">
+              {fertile} · estimate
+            </span>
           ) : null}
           {prediction.regularity.sigma !== null && !prediction.isLate ? (
-            <span className="chip text-[#44403C]">
+            <span className="chip text-[#44403C] dark:text-stone-300">
               {prediction.regularity.label} · σ {prediction.regularity.sigma.toFixed(1)}d
             </span>
           ) : null}
