@@ -262,16 +262,31 @@ export class SupabaseStore implements Store {
   async fillPendingActuals(actualStarts: string[]): Promise<void> {
     if (actualStarts.length === 0) return
     const rows = await this.listPredictions()
+    const updates: Promise<{ error: any }>[] = []
     for (const row of rows) {
       if (row.actual_start) continue
       const actual = actualStarts.filter((s) => s > row.anchor_start).sort().at(0)
       if (!actual) continue
-      const { error } = await this.sb
-        .from('prediction_log')
-        .update({ actual_start: actual })
-        .eq('id', row.id)
-      if (error) throw error
+      updates.push(
+        this.sb
+          .from('prediction_log')
+          .update({ actual_start: actual })
+          .eq('id', row.id) as unknown as Promise<{ error: any }>,
+      )
     }
+    if (updates.length > 0) {
+      const results = await Promise.all(updates)
+      for (const res of results) {
+        if (res.error) throw res.error
+      }
+    }
+  }
+
+  async deleteAllData(): Promise<void> {
+    await this.sb.from('period_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+    await this.sb.from('day_entries').delete().neq('date', '')
+    await this.sb.from('prediction_log').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+    await this.sb.from('settings').update({ cycle_length_override: null, bootstrap_cycle_length: null }).eq('id', 1)
   }
 
   async initialized(): Promise<boolean> {

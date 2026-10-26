@@ -96,7 +96,8 @@ export async function flushQueue(): Promise<number> {
   if (q.length === 0) return 0
   const remaining: QueuedOp[] = []
   let synced = 0
-  for (const op of q) {
+  for (let i = 0; i < q.length; i++) {
+    const op = q[i]
     const { url, method } = endpointFor(op)
     try {
       const res = await fetch(url, {
@@ -105,14 +106,14 @@ export async function flushQueue(): Promise<number> {
         body: JSON.stringify(op.payload),
       })
       if (res.status === 401) {
-        remaining.push(op) // keep everything; auth redirect will handle it
+        remaining.push(...q.slice(i))
         break
       }
       if (res.ok || res.status === 409 || res.status === 400) synced += 1
       else remaining.push(op)
     } catch {
-      remaining.push(op)
-      break // still offline — stop early, keep order
+      remaining.push(...q.slice(i))
+      break // still offline — stop early, keep all remaining in order
     }
   }
   writeQueue(remaining)

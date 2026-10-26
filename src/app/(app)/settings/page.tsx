@@ -7,7 +7,11 @@ export const metadata = { title: 'Our Cycle' }
 
 export default async function SettingsPage() {
   const store = getStore()
-  const [settings, prediction] = await Promise.all([store.getSettings(), computeCurrentPrediction()])
+  const [settings, prediction, periods] = await Promise.all([
+    store.getSettings(),
+    computeCurrentPrediction(),
+    store.listPeriods(),
+  ])
 
   return (
     <div className="pt-2">
@@ -15,6 +19,7 @@ export default async function SettingsPage() {
         settings={settings}
         autoCycleLength={prediction.autoCycleLength}
         sigma={prediction.regularity.sigma}
+        initialPeriods={periods}
       />
     </div>
   )

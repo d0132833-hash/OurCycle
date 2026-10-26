@@ -89,7 +89,8 @@ export interface Store {
    */
   fillPendingActuals(actualStarts: string[]): Promise<void>
 
-  // --- misc -------------------------------------------------------------------
+  // --- misc & data reset -----------------------------------------------------
+  deleteAllData(): Promise<void>
   initialized(): Promise<boolean>
 }
 

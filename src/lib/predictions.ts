@@ -24,10 +24,12 @@ export const MAX_CYCLE = 45
 export const LUTEAL_LENGTH = 14
 export const HALF_LIFE_CYCLES = 4
 export const POPULATION_MEAN = 28
-/** fixed weight of the bootstrap prior when mixed with real observations */
-export const PRIOR_WEIGHT = 0.3
+/** base weight of the bootstrap prior; decays as real data accumulates */
+export const PRIOR_WEIGHT_BASE = 0.3
 /** assumed ±days when we have no σ at all (cold start / single cycle) */
 export const DEFAULT_HALF_RANGE = 3
+/** graduated shrinkage: converge to 100% data over this many cycles */
+export const SHRINKAGE_FULL_CYCLES = 5
 
 export interface EpisodeInput {
   start_date: string
@@ -147,12 +149,45 @@ export function weightedStats(values: number[]): WeightedStats {
   const mean = wx / wSum
   if (values.length < 2) return { mean, sigma: null, count: values.length }
   let wVar = 0
+  let wSqSum = 0
   values.forEach((x, age) => {
     const w = Math.pow(0.5, age / HALF_LIFE_CYCLES)
     wVar += w * (x - mean) * (x - mean)
+    wSqSum += w * w
   })
-  const sigma = Math.sqrt(wVar / wSum)
+  // Bessel-like reliability weight correction: wSum - (sum w_i^2)/wSum
+  const denom = wSum - wSqSum / wSum
+  const sigma = denom > 0 ? Math.sqrt(wVar / denom) : Math.sqrt(wVar / wSum)
   return { mean, sigma, count: values.length }
+}
+
+/**
+ * Simple linear trend detection for cycle lengths over time.
+ * If cycles are systematically lengthening or shortening (e.g. perimenopause),
+ * returns an adjustment in days (clamped to [-3, 3]), or null if trend is negligible.
+ * Expects `valsRecentFirst` with most recent cycle first (age 0).
+ */
+export function detectTrend(valsRecentFirst: number[]): number | null {
+  const n = valsRecentFirst.length
+  if (n < 4) return null
+  // Chronological order: 0 is oldest, n-1 is most recent
+  const chrono = [...valsRecentFirst].reverse()
+  const xMean = (n - 1) / 2
+  const yMean = chrono.reduce((a, b) => a + b, 0) / n
+
+  let num = 0
+  let den = 0
+  for (let i = 0; i < n; i++) {
+    const dx = i - xMean
+    num += dx * (chrono[i] - yMean)
+    den += dx * dx
+  }
+  if (den === 0) return null
+  const slope = num / den // days per cycle
+  // Only apply if trend is noticeable (|slope| >= 0.25 days/cycle)
+  if (Math.abs(slope) < 0.25) return null
+  // Clamp adjustment to [-3, 3] to prevent extreme extrapolation
+  return Math.max(-3, Math.min(3, Math.round(slope * 10) / 10))
 }
 
 // ---------------------------------------------------------------------------
@@ -230,7 +265,8 @@ export function computePredictions(
     const stats = weightedStats(realVals)
     let her = stats.mean
     if (opts.priorCycleLength) {
-      // cold-start prior stays in the mix as a fixed low-weight observation
+      // cold-start prior decays as real data accumulates
+      const priorW = PRIOR_WEIGHT_BASE / (1 + completedCycles)
       let wSum = 0
       let wx = 0
       realVals.forEach((x, age) => {
@@ -238,15 +274,25 @@ export function computePredictions(
         wSum += w
         wx += w * x
       })
-      wSum += PRIOR_WEIGHT
-      wx += PRIOR_WEIGHT * opts.priorCycleLength
+      wSum += priorW
+      wx += priorW * opts.priorCycleLength
       her = wx / wSum
     }
-    if (completedCycles <= 2) {
-      // Sparse-data shrinkage toward the population prior.
-      autoMean = 0.6 * her + 0.4 * POPULATION_MEAN
-    } else {
-      autoMean = her
+    // Graduated shrinkage: smoothly converge from prior to data
+    const blend =
+      completedCycles <= 2
+        ? 0.6
+        : completedCycles === 3
+          ? 0.75
+          : completedCycles === 4
+            ? 0.9
+            : 1.0
+    autoMean = blend * her + (1 - blend) * POPULATION_MEAN
+
+    // Trend detection: if cycles are systematically changing, adjust
+    if (completedCycles >= 4) {
+      const trend = detectTrend(realVals)
+      if (trend !== null) autoMean += trend
     }
     sigma = stats.sigma
   }
@@ -400,7 +446,6 @@ export function buildPhaseMap(
     }
   }
 
-  const starts = sorted.map((e) => e.start_date)
   let cur = from
   while (cur <= to) {
     if (!map[cur]) {
@@ -409,7 +454,6 @@ export function buildPhaseMap(
     }
     cur = addDays(cur, 1)
   }
-  void starts
   return map
 }
 
@@ -430,5 +474,11 @@ export function accuracyFromLog(
   const hits = completed.filter(
     (r) => Math.abs(diffDays(r.actual_start as string, r.predicted_start)) <= window,
   ).length
-  return { evaluated: completed.length, hits, window }
+  const hitsWithin2 = completed.filter(
+    (r) => Math.abs(diffDays(r.actual_start as string, r.predicted_start)) <= 2,
+  ).length
+  const hitsWithin3 = completed.filter(
+    (r) => Math.abs(diffDays(r.actual_start as string, r.predicted_start)) <= 3,
+  ).length
+  return { evaluated: completed.length, hits, window, hitsWithin2, hitsWithin3 }
 }

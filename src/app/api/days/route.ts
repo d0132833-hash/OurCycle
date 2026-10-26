@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getStore } from '@/lib/db'
 import { getSession, unauthorizedResponse } from '@/lib/api-auth'
-import { badRequest, daySchema, dayFlowSchema, intensity3, readJson, score5 } from '@/lib/api-helpers'
+import {
+  badRequest,
+  checkRateLimit,
+  daySchema,
+  dayFlowSchema,
+  intensity3,
+  isSameOrigin,
+  readJson,
+  score5,
+  tooMany,
+} from '@/lib/api-helpers'
 import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
@@ -19,6 +29,8 @@ const upsertSchema = z.object({
   acne: intensity3.optional(),
   bloating: intensity3.optional(),
   fatigue: intensity3.optional(),
+  bbt: z.number().min(30).max(110).nullable().optional(),
+  weight: z.number().min(20).max(300).nullable().optional(),
   note: z.string().max(4000).nullable().optional(),
 })
 
@@ -32,6 +44,8 @@ export async function GET(req: NextRequest) {
 
 /** Upsert-merge: only the fields present in the body are overwritten. */
 export async function POST(req: NextRequest) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Invalid origin' }, { status: 403 })
+  if (!checkRateLimit('days-write', 120, 60)) return tooMany(60)
   if (!(await getSession())) return unauthorizedResponse()
   const parsed = upsertSchema.safeParse(await readJson(req))
   if (!parsed.success) return badRequest(parsed.error.issues[0]?.message ?? 'Invalid input')
@@ -40,6 +54,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Invalid origin' }, { status: 403 })
+  if (!checkRateLimit('days-write', 120, 60)) return tooMany(60)
   if (!(await getSession())) return unauthorizedResponse()
   const parsed = upsertSchema.safeParse(await readJson(req))
   if (!parsed.success) return badRequest(parsed.error.issues[0]?.message ?? 'Invalid input')
@@ -48,6 +64,8 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Invalid origin' }, { status: 403 })
+  if (!checkRateLimit('days-write', 120, 60)) return tooMany(60)
   if (!(await getSession())) return unauthorizedResponse()
   const date = req.nextUrl.searchParams.get('date')
   if (!date || !daySchema.safeParse(date).success) return badRequest('Invalid date')

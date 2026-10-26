@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Fraunces, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/components/theme-provider";
 
 // Self-hosted via next/font — no external font CDN requests, ever.
 const fraunces = Fraunces({
@@ -52,8 +53,10 @@ export default function RootLayout({
       <body
         className={`${fraunces.variable} ${dmSans.variable} font-sans antialiased text-foreground`}
       >
-        {children}
-        <Toaster position="top-center" richColors />
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+          {children}
+          <Toaster position="top-center" richColors />
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -23,6 +23,7 @@ export async function getLockState(): Promise<{ locked: boolean; retryAfterSec: 
     mem.lockedUntil = 0
   }
   const row = await getStore().getThrottle()
+  mem.fails = Math.max(mem.fails, row.fail_count)
   if (row.locked_until && new Date(row.locked_until).getTime() > nowMs()) {
     mem.lockedUntil = new Date(row.locked_until).getTime()
     return {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getStore } from '@/lib/db'
 import { getSession, unauthorizedResponse } from '@/lib/api-auth'
-import { badRequest, isValidTimezone, readJson } from '@/lib/api-helpers'
+import { badRequest, isSameOrigin, isValidTimezone, readJson } from '@/lib/api-helpers'
 import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
@@ -19,6 +19,7 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Invalid origin' }, { status: 403 })
   if (!(await getSession())) return unauthorizedResponse()
   const parsed = patchSchema.safeParse(await readJson(req))
   if (!parsed.success) return badRequest(parsed.error.issues[0]?.message ?? 'Invalid input')

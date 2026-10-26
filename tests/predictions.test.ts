@@ -3,6 +3,7 @@ import {
   accuracyFromLog,
   computePredictions,
   deriveObservations,
+  detectTrend,
   madOutlierFlags,
   weightedStats,
 } from '@/lib/predictions'
@@ -283,13 +284,29 @@ describe('model accuracy self-report (prediction_log)', () => {
       { predicted_start: '2026-06-19', actual_start: null }, // pending, ignored
     ]
     const acc = accuracyFromLog(rows)
-    expect(acc).toEqual({ evaluated: 6, hits: 5, window: 1 })
+    expect(acc).toEqual({ evaluated: 6, hits: 5, window: 1, hitsWithin2: 6, hitsWithin3: 6 })
   })
 
   it('reports zero evaluated rows while predictions are pending', () => {
     const acc = accuracyFromLog([{ predicted_start: '2026-06-19', actual_start: null }])
     expect(acc.evaluated).toBe(0)
     expect(acc.hits).toBe(0)
+    expect(acc.hitsWithin2).toBe(0)
+    expect(acc.hitsWithin3).toBe(0)
+  })
+})
+
+describe('linear trend detection', () => {
+  it('detects lengthening cycle trend', () => {
+    // oldest: 26, 28, 30, 32 -> valsRecentFirst: [32, 30, 28, 26]
+    // slope is +2 days per cycle
+    const trend = detectTrend([32, 30, 28, 26])
+    expect(trend).toBe(2)
+  })
+
+  it('returns null when cycle variation is flat or noise', () => {
+    const trend = detectTrend([28, 28, 28, 28])
+    expect(trend).toBeNull()
   })
 })
 

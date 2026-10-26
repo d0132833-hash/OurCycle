@@ -25,4 +25,12 @@ export function getStore(): Store {
   return cached
 }
 
+export function setStore(store: Store | null): void {
+  cached = store
+}
+
+export function resetStore(): void {
+  cached = null
+}
+
 export type { Store }

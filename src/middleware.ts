@@ -43,7 +43,7 @@ export async function middleware(req: NextRequest) {
     const fresh = await signSessionEdge({ ...payload, iat: now, exp: now + TTL }, secret)
     res.cookies.set(SESSION_COOKIE, fresh, {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       path: '/',
       maxAge: TTL,

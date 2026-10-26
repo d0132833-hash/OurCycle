@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getStore } from '@/lib/db'
 import { hashPassphrase, newSessionPayload, sessionCookieOptions, sessionSecret, signSession } from '@/lib/crypto'
-import { badRequest, conflict, readJson } from '@/lib/api-helpers'
+import { badRequest, checkRateLimit, conflict, isSameOrigin, readJson, tooMany } from '@/lib/api-helpers'
 import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
@@ -10,6 +10,8 @@ const bodySchema = z.object({ code: z.string().min(10, 'Use at least 10 characte
 
 /** First run only: create the vault with an Argon2id hash of the passphrase. */
 export async function POST(req: NextRequest) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Invalid origin' }, { status: 403 })
+  if (!checkRateLimit('setup-post', 5, 600)) return tooMany(600)
   const parsed = bodySchema.safeParse(await readJson(req))
   if (!parsed.success) return badRequest(parsed.error.issues[0]?.message ?? 'Invalid input')
 

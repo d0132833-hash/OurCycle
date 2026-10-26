@@ -8,7 +8,7 @@ import {
   signSession,
   verifyPassphrase,
 } from '@/lib/crypto'
-import { badRequest, readJson, tooMany } from '@/lib/api-helpers'
+import { badRequest, checkRateLimit, isSameOrigin, readJson, tooMany } from '@/lib/api-helpers'
 import { getLockState, recordLoginFailure, recordLoginSuccess } from '@/lib/lockout'
 import { getSession } from '@/lib/api-auth'
 import { z } from 'zod'
@@ -22,6 +22,12 @@ const bodySchema = z.object({
 
 /** Vault rotation: re-hash + bump session epoch → every old cookie dies. */
 export async function POST(req: NextRequest) {
+  if (!isSameOrigin(req)) {
+    return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 })
+  }
+  if (!checkRateLimit('vault-rotate', 3, 900)) {
+    return tooMany(900)
+  }
   if (!(await getSession())) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }

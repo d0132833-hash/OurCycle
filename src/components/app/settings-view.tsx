@@ -2,10 +2,13 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTheme } from 'next-themes'
+import { toast } from 'sonner'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -13,9 +16,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
-import type { AppSettings } from '@/lib/types'
+import {
+  Download,
+  FileJson,
+  FileSpreadsheet,
+  Moon,
+  Pencil,
+  Sun,
+  Trash2,
+  Monitor,
+  Calendar,
+  AlertTriangle,
+} from 'lucide-react'
+import type { AppSettings, PeriodEpisode } from '@/lib/types'
 import { RotateForm } from './vault-forms'
 
 const TIMEZONES = [
@@ -34,21 +67,38 @@ const TIMEZONES = [
   'UTC',
 ]
 
+interface Props {
+  settings: AppSettings
+  autoCycleLength: number | null
+  sigma: number | null
+  initialPeriods?: PeriodEpisode[]
+}
+
 export function SettingsView({
   settings,
   autoCycleLength,
   sigma,
-}: {
-  settings: AppSettings
-  autoCycleLength: number | null
-  sigma: number | null
-}) {
+  initialPeriods = [],
+}: Props) {
   const router = useRouter()
+  const { theme, setTheme } = useTheme()
+
   const [overrideOn, setOverrideOn] = useState(settings.cycle_length_override !== null)
   const [overrideLen, setOverrideLen] = useState(settings.cycle_length_override ?? 28)
   const [tz, setTz] = useState(settings.timezone)
   const [savingCycle, setSavingCycle] = useState(false)
   const [savingTz, setSavingTz] = useState(false)
+
+  // Period history editing state
+  const [periods, setPeriods] = useState<PeriodEpisode[]>(initialPeriods)
+  const [editingPeriod, setEditingPeriod] = useState<PeriodEpisode | null>(null)
+  const [editStartDate, setEditStartDate] = useState('')
+  const [editEndDate, setEditEndDate] = useState('')
+  const [editFlow, setEditFlow] = useState<string>('medium')
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const [resetDialogOpen, setResetDialogOpen] = useState(false)
+  const [resetting, setResetting] = useState(false)
 
   async function patch(body: Record<string, unknown>, savingSetter?: (v: boolean) => void) {
     try {
@@ -92,6 +142,88 @@ export function SettingsView({
     }
   }
 
+  function openEditModal(period: PeriodEpisode) {
+    setEditingPeriod(period)
+    setEditStartDate(period.start_date)
+    setEditEndDate(period.end_date ?? '')
+    setEditFlow(period.flow ?? 'medium')
+  }
+
+  async function savePeriodEdit() {
+    if (!editingPeriod) return
+    if (!editStartDate) {
+      toast.error('Start date is required')
+      return
+    }
+    if (editEndDate && editEndDate < editStartDate) {
+      toast.error('End date cannot be before start date')
+      return
+    }
+    setSavingEdit(true)
+    try {
+      const res = await fetch('/api/periods', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingPeriod.id,
+          start_date: editStartDate,
+          end_date: editEndDate || null,
+          flow: editFlow || null,
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        throw new Error(data?.error ?? 'Could not update period')
+      }
+      const data = await res.json()
+      setPeriods((prev) =>
+        prev
+          .map((p) => (p.id === editingPeriod.id ? data.period : p))
+          .sort((a, b) => a.start_date.localeCompare(b.start_date)),
+      )
+      setEditingPeriod(null)
+      toast.success('Period episode updated')
+      router.refresh()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Error updating period')
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
+  async function deletePeriodEpisode(id: string) {
+    try {
+      const res = await fetch(`/api/periods?id=${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Could not delete period')
+      setPeriods((prev) => prev.filter((p) => p.id !== id))
+      setDeleteConfirmId(null)
+      toast.success('Period removed')
+      router.refresh()
+    } catch {
+      toast.error('Failed to delete period')
+    }
+  }
+
+  async function resetAllData() {
+    setResetting(true)
+    try {
+      const res = await fetch('/api/reset', { method: 'POST' })
+      if (!res.ok) throw new Error('Could not reset data')
+      setPeriods([])
+      setResetDialogOpen(false)
+      toast.success('All cycle and symptom data has been reset')
+      router.refresh()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Reset failed')
+    } finally {
+      setResetting(false)
+    }
+  }
+
+  function downloadExport(format: 'json' | 'csv') {
+    window.open(`/api/export?format=${format}`, '_blank')
+  }
+
   async function signOut() {
     await fetch('/api/auth/logout', { method: 'POST' })
     window.location.href = '/login'
@@ -103,6 +235,45 @@ export function SettingsView({
         <h2 className="font-display text-xl font-semibold">Settings</h2>
         <p className="text-sm text-muted-foreground">Your vault, your rules.</p>
       </div>
+
+      {/* Appearance / Theme */}
+      <Card className="card-soft border-0">
+        <CardContent className="p-5">
+          <h3 className="font-display text-base font-semibold">Appearance</h3>
+          <p className="mb-3 text-sm text-muted-foreground">
+            Comfortable viewing day and night.
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            <Button
+              type="button"
+              variant={theme === 'light' ? 'default' : 'outline'}
+              onClick={() => setTheme('light')}
+              className={`rounded-xl text-xs h-10 ${theme === 'light' ? 'bg-primary text-primary-foreground' : ''}`}
+            >
+              <Sun className="mr-1.5 h-3.5 w-3.5" />
+              Light
+            </Button>
+            <Button
+              type="button"
+              variant={theme === 'dark' ? 'default' : 'outline'}
+              onClick={() => setTheme('dark')}
+              className={`rounded-xl text-xs h-10 ${theme === 'dark' ? 'bg-primary text-primary-foreground' : ''}`}
+            >
+              <Moon className="mr-1.5 h-3.5 w-3.5" />
+              Dark
+            </Button>
+            <Button
+              type="button"
+              variant={theme === 'system' ? 'default' : 'outline'}
+              onClick={() => setTheme('system')}
+              className={`rounded-xl text-xs h-10 ${theme === 'system' ? 'bg-primary text-primary-foreground' : ''}`}
+            >
+              <Monitor className="mr-1.5 h-3.5 w-3.5" />
+              System
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Cycle length */}
       <Card className="card-soft border-0">
@@ -156,7 +327,69 @@ export function SettingsView({
         </CardContent>
       </Card>
 
-      {/* Timezone */}
+      {/* Period History Management */}
+      <Card className="card-soft border-0">
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-display text-base font-semibold">Period history</h3>
+              <p className="text-sm text-muted-foreground">
+                Review and edit past period records.
+              </p>
+            </div>
+            <Calendar className="h-4 w-4 text-primary" />
+          </div>
+
+          <div className="mt-3 space-y-2 max-h-56 overflow-y-auto pr-1 nice-scroll">
+            {periods.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-2">No periods recorded yet.</p>
+            ) : (
+              [...periods].reverse().map((p) => (
+                <div
+                  key={p.id}
+                  className="flex items-center justify-between rounded-xl border border-border/60 bg-white/40 p-2.5 text-xs dark:bg-zinc-900/40"
+                >
+                  <div>
+                    <span className="font-medium text-foreground">
+                      {p.start_date}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {' → '}{p.end_date ?? 'ongoing'}
+                    </span>
+                    {p.flow ? (
+                      <span className="ml-2 rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] text-rose-700 capitalize dark:bg-rose-950/60 dark:text-rose-300">
+                        {p.flow}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => openEditModal(p)}
+                      className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground"
+                      aria-label="Edit period"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => setDeleteConfirmId(p.id)}
+                      className="h-7 w-7 rounded-lg text-muted-foreground hover:text-rose-600"
+                      aria-label="Delete period"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Timezone (kept as-is per user instruction) */}
       <Card className="card-soft border-0">
         <CardContent className="p-5">
           <h3 className="font-display text-base font-semibold">Timezone</h3>
@@ -164,7 +397,7 @@ export function SettingsView({
             Used to decide what &ldquo;today&rdquo; means for logging and predictions.
           </p>
           <Select value={tz} onValueChange={(v) => void saveTz(v)}>
-            <SelectTrigger className="h-11 w-full rounded-xl border-[rgba(225,29,72,0.2)] bg-white/80">
+            <SelectTrigger className="h-11 w-full rounded-xl border-[rgba(225,29,72,0.2)] bg-white/80 dark:bg-zinc-900/60">
               <SelectValue placeholder="Pick a timezone" />
             </SelectTrigger>
             <SelectContent>
@@ -176,6 +409,41 @@ export function SettingsView({
             </SelectContent>
           </Select>
           {savingTz ? <p className="mt-2 text-[11px] text-muted-foreground">Saving…</p> : null}
+        </CardContent>
+      </Card>
+
+      {/* Data Export */}
+      <Card className="card-soft border-0">
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-display text-base font-semibold">Data portability</h3>
+              <p className="text-sm text-muted-foreground">
+                Download your complete tracking archive anytime.
+              </p>
+            </div>
+            <Download className="h-4 w-4 text-primary" />
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-2.5">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => downloadExport('json')}
+              className="h-10 rounded-xl text-xs border-[rgba(225,29,72,0.2)]"
+            >
+              <FileJson className="mr-1.5 h-3.5 w-3.5 text-primary" />
+              Download JSON
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => downloadExport('csv')}
+              className="h-10 rounded-xl text-xs border-[rgba(225,29,72,0.2)]"
+            >
+              <FileSpreadsheet className="mr-1.5 h-3.5 w-3.5 text-primary" />
+              Download CSV
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -215,23 +483,142 @@ export function SettingsView({
         </CardContent>
       </Card>
 
-      {/* Privacy note */}
+      {/* Privacy note & Data Reset */}
       <Card className="card-soft border-0">
-        <CardContent className="p-5">
-          <h3 className="font-display text-base font-semibold">Privacy</h3>
-          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-            Everything lives in your own database, guarded by your vault code. No
-            analytics, no trackers, no third-party requests with your data — ever.
+        <CardContent className="p-5 space-y-3">
+          <h3 className="font-display text-base font-semibold">Privacy &amp; Data</h3>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            Everything lives in your own vault. No analytics, no trackers, no third-party requests with your data — ever.
           </p>
+
           <Button
             onClick={() => void signOut()}
             variant="outline"
-            className="mt-4 h-11 w-full rounded-full border-[rgba(225,29,72,0.3)] text-primary"
+            className="h-11 w-full rounded-full border-[rgba(225,29,72,0.3)] text-primary"
           >
             Lock the vault (sign out)
           </Button>
+
+          <Button
+            onClick={() => setResetDialogOpen(true)}
+            variant="ghost"
+            className="h-10 w-full text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/40"
+          >
+            <AlertTriangle className="mr-1.5 h-3.5 w-3.5" />
+            Reset all tracking data
+          </Button>
         </CardContent>
       </Card>
+
+      {/* Edit Period Dialog */}
+      <Dialog open={editingPeriod !== null} onOpenChange={(open) => !open && setEditingPeriod(null)}>
+        <DialogContent className="max-w-xs rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-display text-lg">Edit period</DialogTitle>
+            <DialogDescription className="text-xs">
+              Update dates or flow for this episode. Predictions recalculate automatically.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2 text-sm">
+            <div>
+              <Label className="text-xs text-muted-foreground">Start date</Label>
+              <Input
+                type="date"
+                value={editStartDate}
+                onChange={(e) => setEditStartDate(e.target.value)}
+                className="mt-1 h-9 rounded-xl text-xs"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">End date (optional)</Label>
+              <Input
+                type="date"
+                value={editEndDate}
+                onChange={(e) => setEditEndDate(e.target.value)}
+                className="mt-1 h-9 rounded-xl text-xs"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Flow</Label>
+              <Select value={editFlow} onValueChange={setEditFlow}>
+                <SelectTrigger className="mt-1 h-9 rounded-xl text-xs">
+                  <SelectValue placeholder="Flow" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="spotting">Spotting</SelectItem>
+                  <SelectItem value="light">Light</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="heavy">Heavy</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter className="flex-row gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => setEditingPeriod(null)}
+              className="flex-1 rounded-xl text-xs"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={savePeriodEdit}
+              disabled={savingEdit}
+              className="flex-1 rounded-xl bg-primary text-primary-foreground text-xs"
+            >
+              {savingEdit ? 'Saving…' : 'Save changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Period Confirmation */}
+      <AlertDialog
+        open={deleteConfirmId !== null}
+        onOpenChange={(open) => !open && setDeleteConfirmId(null)}
+      >
+        <AlertDialogContent className="max-w-xs rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-display text-base">Delete this period?</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs">
+              This episode will be permanently removed and predictions will update.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2 pt-2">
+            <AlertDialogCancel className="flex-1 rounded-xl text-xs">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteConfirmId && deletePeriodEpisode(deleteConfirmId)}
+              className="flex-1 rounded-xl bg-rose-600 text-white text-xs hover:bg-rose-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reset Data Confirmation */}
+      <AlertDialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+        <AlertDialogContent className="max-w-xs rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-display text-base text-rose-600">Reset all tracking data?</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs">
+              This will erase all logged periods, symptoms, and forecasts. Your vault password will remain active.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2 pt-2">
+            <AlertDialogCancel className="flex-1 rounded-xl text-xs">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={resetAllData}
+              disabled={resetting}
+              className="flex-1 rounded-xl bg-rose-600 text-white text-xs hover:bg-rose-700"
+            >
+              {resetting ? 'Resetting…' : 'Wipe all data'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

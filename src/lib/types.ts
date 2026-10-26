@@ -52,6 +52,8 @@ export interface DayEntry {
   acne: number | null
   bloating: number | null
   fatigue: number | null
+  bbt?: number | null
+  weight?: number | null
   note: string | null
   created_at?: string
   updated_at?: string
@@ -93,4 +95,17 @@ export interface AccuracyReport {
   evaluated: number // completed predictions looked at (max 6)
   hits: number // within ±1 day
   window: number // ±days that counts as a hit
+  hitsWithin2?: number // within ±2 days
+  hitsWithin3?: number // within ±3 days
+}
+
+export interface SessionPayload {
+  /** session epoch — must match app_secrets.session_epoch */
+  v: number
+  /** issued at (unix seconds) */
+  iat: number
+  /** expiry (unix seconds) */
+  exp: number
+  /** random token id */
+  j: string
 }

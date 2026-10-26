@@ -1,8 +1,7 @@
-import { diffDays } from '@/lib/dates'
+'use client'
 
-// Countdown ring: shows how far through the cycle she is, with the number
-// of days until the next period in the middle. Calm by design — never red,
-// never the word "late".
+import { motion } from 'framer-motion'
+import { diffDays } from '@/lib/dates'
 
 interface Props {
   today: string
@@ -61,23 +60,46 @@ export function CountdownRing({
   return (
     <div className="relative mx-auto h-48 w-48" role="img" aria-label={`${center} ${sub}`}>
       <svg viewBox="0 0 176 176" className="h-full w-full -rotate-90">
-        <circle cx="88" cy="88" r={R} fill="none" stroke="rgba(225,29,72,0.10)" strokeWidth="12" />
+        <defs>
+          <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#E11D48" />
+            <stop offset="100%" stopColor="#FB7185" />
+          </linearGradient>
+        </defs>
+        {/* Background track */}
         <circle
           cx="88"
           cy="88"
           r={R}
           fill="none"
-          stroke="#E11D48"
+          stroke="currentColor"
+          className="text-rose-500/10 dark:text-rose-500/15"
+          strokeWidth="12"
+        />
+        {/* Animated progress ring */}
+        <motion.circle
+          cx="88"
+          cy="88"
+          r={R}
+          fill="none"
+          stroke="url(#ringGradient)"
           strokeWidth="12"
           strokeLinecap="round"
           strokeDasharray={C}
-          strokeDashoffset={C * (1 - progress)}
+          initial={{ strokeDashoffset: C }}
+          animate={{ strokeDashoffset: C * (1 - progress) }}
+          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
         />
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
+      <motion.div
+        className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none"
+        initial={{ opacity: 0, scale: 0.92 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
         <span className="font-display text-3xl font-semibold text-primary">{center}</span>
         <span className="mt-0.5 text-xs text-muted-foreground">{sub}</span>
-      </div>
+      </motion.div>
     </div>
   )
 }

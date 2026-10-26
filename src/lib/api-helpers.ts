@@ -44,3 +44,36 @@ export function isValidTimezone(tz: string): boolean {
     return false
   }
 }
+
+// --- CSRF origin validation --------------------------------------------------
+
+export function isSameOrigin(req: Request): boolean {
+  const origin = req.headers.get('origin')
+  if (!origin) return true
+  const host = req.headers.get('host')
+  if (!host) return true
+  try {
+    const originHost = new URL(origin).host
+    return originHost === host
+  } catch {
+    return false
+  }
+}
+
+// --- lightweight rate limiting -----------------------------------------------
+
+const rateLimits = new Map<string, { count: number; resetAt: number }>()
+
+export function checkRateLimit(key: string, maxRequests: number, windowSec: number): boolean {
+  const now = Date.now()
+  const current = rateLimits.get(key)
+  if (!current || now > current.resetAt) {
+    rateLimits.set(key, { count: 1, resetAt: now + windowSec * 1000 })
+    return true
+  }
+  if (current.count >= maxRequests) {
+    return false
+  }
+  current.count++
+  return true
+}

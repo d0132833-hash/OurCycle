@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -30,11 +31,21 @@ function dayKey(offset: number, iso: string) {
   return offset === 0 ? iso : addDays(iso, offset)
 }
 
+function triggerHaptic() {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    try {
+      navigator.vibrate(10)
+    } catch {}
+  }
+}
+
 export function CalendarGrid({ episodes, entries, prediction }: Props) {
   const today = prediction.today
   const [view, setView] = useState(() => today.slice(0, 7)) // YYYY-MM
   const [selected, setSelected] = useState<string | null>(null)
   const [open, setOpen] = useState(false)
+  const [touchStart, setTouchStart] = useState<number | null>(null)
+  const [touchEnd, setTouchEnd] = useState<number | null>(null)
 
   const entryByDate = useMemo(() => {
     const m = new Map<string, DayEntry>()
@@ -111,6 +122,7 @@ export function CalendarGrid({ episodes, entries, prediction }: Props) {
   }
 
   function shiftMonth(delta: number) {
+    triggerHaptic()
     const y = Number(view.slice(0, 4))
     const m = Number(view.slice(5, 7)) - 1 + delta
     const nd = new Date(Date.UTC(y, m, 15))
@@ -122,21 +134,46 @@ export function CalendarGrid({ episodes, entries, prediction }: Props) {
       toast.info('You can log a day once it begins')
       return
     }
+    triggerHaptic()
     setSelected(d)
     setOpen(true)
+  }
+
+  function handleTouchStart(e: React.TouchEvent) {
+    setTouchEnd(null)
+    setTouchStart(e.targetTouches[0].clientX)
+  }
+
+  function handleTouchMove(e: React.TouchEvent) {
+    setTouchEnd(e.targetTouches[0].clientX)
+  }
+
+  function handleTouchEnd() {
+    if (!touchStart || !touchEnd) return
+    const distance = touchStart - touchEnd
+    if (distance > 45) {
+      shiftMonth(1) // swipe left -> next month
+    } else if (distance < -45) {
+      shiftMonth(-1) // swipe right -> prev month
+    }
   }
 
   const selectedEntry = selected ? (entryByDate.get(selected) ?? null) : null
 
   return (
-    <div className="card-soft p-4">
+    <div
+      className="card-soft p-4 select-none"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       <div className="mb-3 flex items-center justify-between">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => shiftMonth(-1)}
           aria-label="Previous month"
-          className="rounded-full text-muted-foreground"
+          className="rounded-full text-muted-foreground transition-transform active:scale-90"
         >
           <ChevronLeft className="h-5 w-5" aria-hidden />
         </Button>
@@ -146,14 +183,16 @@ export function CalendarGrid({ episodes, entries, prediction }: Props) {
             <p className="text-[11px] text-muted-foreground">
               Irregular pattern — ranges shown. Logging sharpens predictions.
             </p>
-          ) : null}
+          ) : (
+            <p className="text-[10px] text-muted-foreground/80 sm:hidden">Swipe left/right to change month</p>
+          )}
         </div>
         <Button
           variant="ghost"
           size="icon"
           onClick={() => shiftMonth(1)}
           aria-label="Next month"
-          className="rounded-full text-muted-foreground"
+          className="rounded-full text-muted-foreground transition-transform active:scale-90"
         >
           <ChevronRight className="h-5 w-5" aria-hidden />
         </Button>
@@ -165,56 +204,65 @@ export function CalendarGrid({ episodes, entries, prediction }: Props) {
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-y-1">
-        {cells.map((d, i) => {
-          if (!d) return <span key={`empty-${i}`} />
-          const kind = cellKind(d)
-          const isToday = d === today
-          const hasEntry = entryByDate.has(d)
-          const isOvu = marks.ovu.has(d) && kind === 'plain'
-          const inFuture = d > today
-          return (
-            <div key={d} className="flex justify-center">
-              <button
-                type="button"
-                onClick={() => openDay(d)}
-                aria-label={`${fmtShort(d)}${kind === 'period' ? ', period day' : kind === 'predicted' ? ', predicted period' : kind === 'fertile' ? ', fertile window' : ''}`}
-                className={[
-                  'relative flex h-10 w-10 items-center justify-center rounded-full text-sm transition-transform active:scale-95',
-                  kind === 'period' ? 'bg-[#E11D48] font-semibold text-white shadow-[0_4px_10px_rgba(225,29,72,0.35)]' : '',
-                  kind === 'spotting' ? 'bg-[#FDA4AF]/50 text-[#9F1239]' : '',
-                  kind === 'predicted' ? 'cell-predicted text-primary' : '',
-                  kind === 'fertile' ? 'bg-[#FDBA74]/30 text-[#9A3412]' : '',
-                  kind === 'plain' ? (inFuture ? 'text-muted-foreground' : 'text-foreground') : '',
-                  isToday && kind !== 'period' ? 'ring-2 ring-[#E11D48] ring-offset-1 ring-offset-transparent' : '',
-                  isToday && kind === 'period' ? 'ring-2 ring-[#E11D48]/50 ring-offset-1 ring-offset-transparent' : '',
-                ].join(' ')}
-              >
-                {Number(d.slice(8))}
-                {isOvu ? (
-                  <span
-                    className="absolute bottom-0.5 h-1.5 w-1.5 rounded-full bg-[#F97316]"
-                    aria-hidden
-                  />
-                ) : null}
-                {hasEntry && kind === 'plain' ? (
-                  <span
-                    className="absolute bottom-0.5 h-1 w-1 rounded-full bg-[#E11D48]/40"
-                    aria-hidden
-                  />
-                ) : null}
-              </button>
-            </div>
-          )
-        })}
-      </div>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={view}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.2 }}
+          className="grid grid-cols-7 gap-y-1"
+        >
+          {cells.map((d, i) => {
+            if (!d) return <span key={`empty-${i}`} />
+            const kind = cellKind(d)
+            const isToday = d === today
+            const hasEntry = entryByDate.has(d)
+            const isOvu = marks.ovu.has(d) && kind === 'plain'
+            const inFuture = d > today
+            return (
+              <div key={d} className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => openDay(d)}
+                  aria-label={`${fmtShort(d)}${kind === 'period' ? ', period day' : kind === 'predicted' ? ', predicted period' : kind === 'fertile' ? ', fertile window' : ''}`}
+                  className={[
+                    'relative flex h-10 w-10 items-center justify-center rounded-full text-sm transition-transform active:scale-95',
+                    kind === 'period' ? 'bg-[#E11D48] font-semibold text-white shadow-[0_4px_10px_rgba(225,29,72,0.35)]' : '',
+                    kind === 'spotting' ? 'bg-[#FDA4AF]/50 text-[#9F1239] dark:bg-rose-900/50 dark:text-rose-200' : '',
+                    kind === 'predicted' ? 'cell-predicted text-primary' : '',
+                    kind === 'fertile' ? 'bg-[#FDBA74]/30 text-[#9A3412] dark:bg-amber-950/40 dark:text-amber-200' : '',
+                    kind === 'plain' ? (inFuture ? 'text-muted-foreground' : 'text-foreground') : '',
+                    isToday && kind !== 'period' ? 'ring-2 ring-[#E11D48] ring-offset-1 ring-offset-transparent' : '',
+                    isToday && kind === 'period' ? 'ring-2 ring-[#E11D48]/50 ring-offset-1 ring-offset-transparent' : '',
+                  ].join(' ')}
+                >
+                  {Number(d.slice(8))}
+                  {isOvu ? (
+                    <span
+                      className="absolute bottom-0.5 h-1.5 w-1.5 rounded-full bg-[#F97316]"
+                      aria-hidden
+                    />
+                  ) : null}
+                  {hasEntry && kind === 'plain' ? (
+                    <span
+                      className="absolute bottom-0.5 h-1 w-1 rounded-full bg-[#E11D48]/40"
+                      aria-hidden
+                    />
+                  ) : null}
+                </button>
+              </div>
+            )
+          })}
+        </motion.div>
+      </AnimatePresence>
 
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-border/60 pt-3 text-[11px] text-muted-foreground">
         <Legend className="bg-[#E11D48]" label="Period" />
         <Legend className="cell-predicted" label="Predicted" />
-        <Legend className="bg-[#FDBA74]/60" label="Fertile" />
-        <Legend className="bg-white border border-border" dot label="Ovulation" />
-        <Legend className="bg-white ring-1 ring-[#E11D48]" label="Today" />
+        <Legend className="bg-[#FDBA74]/60 dark:bg-amber-700/60" label="Fertile" />
+        <Legend className="bg-card border border-border" dot label="Ovulation" />
+        <Legend className="bg-card ring-1 ring-[#E11D48]" label="Today" />
       </div>
 
       <DaySheet date={selected} entry={selectedEntry} open={open} onOpenChange={setOpen} />

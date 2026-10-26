@@ -5,7 +5,7 @@
    - API calls and non-GET requests are NEVER cached; day-log writes made
      offline are queued client-side and replayed on reconnect. */
 
-const VERSION = 'our-cycle-v1'
+const VERSION = 'our-cycle-v1.1'
 const APP_SHELL = [
   '/',
   '/calendar',
@@ -67,5 +67,11 @@ self.addEventListener('fetch', (event) => {
           }),
       ),
     )
+  }
+})
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.action === 'skipWaiting') {
+    self.skipWaiting()
   }
 })

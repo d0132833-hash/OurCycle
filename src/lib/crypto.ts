@@ -12,11 +12,23 @@ const ARGON_MEMORY = 19456
 const ARGON_ITERATIONS = 2
 const ARGON_PARALLELISM = 1
 
+import type { SessionPayload } from './types'
+
+export type { SessionPayload }
+
+let warnedDevSecret = false
+
 /** Dev fallback so the app is testable without env vars; prod requires SESSION_SECRET. */
 export function sessionSecret(): string {
   const s = process.env.SESSION_SECRET
   if (s) return s
-  if (process.env.NODE_ENV !== 'production') return 'our-cycle-dev-only-secret-change-me'
+  if (process.env.NODE_ENV !== 'production') {
+    if (!warnedDevSecret) {
+      warnedDevSecret = true
+      console.warn('[SECURITY WARNING] Using dev fallback session secret. Set SESSION_SECRET before deploying to production.')
+    }
+    return 'our-cycle-dev-only-secret-change-me'
+  }
   throw new Error('SESSION_SECRET env var is required in production')
 }
 
@@ -62,17 +74,6 @@ export function verifyPassphrase(code: string, stored: string): boolean {
 
 // --- signed session token (HMAC-SHA256, httpOnly cookie) ---------------------
 
-export interface SessionPayload {
-  /** session epoch — must match app_secrets.session_epoch */
-  v: number
-  /** issued at (unix seconds) */
-  iat: number
-  /** expiry (unix seconds) */
-  exp: number
-  /** random token id */
-  j: string
-}
-
 function b64url(buf: Buffer): string {
   return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
@@ -117,7 +118,7 @@ export function newSessionPayload(epoch: number): SessionPayload {
 export function sessionCookieOptions() {
   return {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict' as const,
     path: '/',
     maxAge: SESSION_TTL_SECONDS,

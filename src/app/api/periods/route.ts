@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getStore } from '@/lib/db'
 import { getSession, unauthorizedResponse } from '@/lib/api-auth'
-import { badRequest, conflict, daySchema, episodeFlowSchema, readJson } from '@/lib/api-helpers'
+import {
+  badRequest,
+  checkRateLimit,
+  conflict,
+  daySchema,
+  episodeFlowSchema,
+  isSameOrigin,
+  readJson,
+  tooMany,
+} from '@/lib/api-helpers'
 import { syncPredictionLog } from '@/lib/recompute'
 import { todayInTz } from '@/lib/dates'
 import type { PeriodEpisode } from '@/lib/types'
@@ -16,7 +25,7 @@ const createSchema = z.object({
 })
 
 const patchSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().min(1),
   start_date: daySchema.optional(),
   end_date: daySchema.nullable().optional(),
   flow: episodeFlowSchema.optional(),
@@ -29,6 +38,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Invalid origin' }, { status: 403 })
+  if (!checkRateLimit('periods-write', 60, 60)) return tooMany(60)
   if (!(await getSession())) return unauthorizedResponse()
   const parsed = createSchema.safeParse(await readJson(req))
   if (!parsed.success) return badRequest(parsed.error.issues[0]?.message ?? 'Invalid input')
@@ -49,6 +60,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Invalid origin' }, { status: 403 })
+  if (!checkRateLimit('periods-write', 60, 60)) return tooMany(60)
   if (!(await getSession())) return unauthorizedResponse()
   const parsed = patchSchema.safeParse(await readJson(req))
   if (!parsed.success) return badRequest(parsed.error.issues[0]?.message ?? 'Invalid input')
@@ -68,6 +81,8 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Invalid origin' }, { status: 403 })
+  if (!checkRateLimit('periods-write', 60, 60)) return tooMany(60)
   if (!(await getSession())) return unauthorizedResponse()
   const id = req.nextUrl.searchParams.get('id')
   if (!id) return badRequest('Missing id')
