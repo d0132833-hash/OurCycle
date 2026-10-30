@@ -52,7 +52,7 @@ export async function verifySessionEdge(
   try {
     const rawSig = fromB64url(sigPart)
     const key = await hmacKey(secret, ['verify'])
-    const valid = await crypto.subtle.verify('HMAC', key, rawSig, enc.encode(body))
+    const valid = await crypto.subtle.verify('HMAC', key, rawSig as unknown as BufferSource, enc.encode(body))
     if (!valid) return null
 
     const payload = JSON.parse(new TextDecoder().decode(fromB64url(body))) as SessionPayload

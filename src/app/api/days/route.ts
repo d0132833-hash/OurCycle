@@ -31,6 +31,10 @@ const upsertSchema = z.object({
   fatigue: intensity3.optional(),
   bbt: z.number().min(30).max(110).nullable().optional(),
   weight: z.number().min(20).max(300).nullable().optional(),
+  sleep_hours: z.number().min(0).max(24).nullable().optional(),
+  water_glasses: z.number().min(0).max(30).nullable().optional(),
+  exercise: z.string().max(100).nullable().optional(),
+  tags: z.array(z.string().max(50)).nullable().optional(),
   note: z.string().max(4000).nullable().optional(),
 })
 

@@ -22,7 +22,9 @@ import {
   HeartPulse,
   Sparkles,
   TrendingUp,
+  FileText,
 } from 'lucide-react'
+import { AdvancedAnalytics } from './advanced-analytics'
 import type {
   AccuracyReport,
   DayEntry,
@@ -202,6 +204,23 @@ export function InsightsView({
 
   return (
     <div className="space-y-4">
+      {/* Top Header with Doctor Report Shortcut */}
+      <div className="flex items-center justify-between pb-1">
+        <div>
+          <h2 className="font-display text-xl font-semibold">Insights &amp; Patterns</h2>
+          <p className="text-xs text-muted-foreground">Self-learning cycle intelligence</p>
+        </div>
+        <a
+          href="/report"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl border border-primary/20 bg-primary/10 text-primary hover:bg-primary/15 transition-colors"
+        >
+          <FileText className="h-3.5 w-3.5" />
+          <span>Doctor Report</span>
+        </a>
+      </div>
+
       {/* Accuracy card */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
@@ -423,6 +442,14 @@ export function InsightsView({
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Advanced Health Charts & Correlation Intelligence */}
+      <AdvancedAnalytics
+        episodes={episodes}
+        days={days}
+        prediction={prediction}
+        phaseMap={phaseMap}
+      />
 
       <p className="px-2 pb-2 text-center text-[11px] leading-relaxed text-muted-foreground">
         Private calculations for you and your partner. Not medical advice.

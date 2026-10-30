@@ -70,11 +70,12 @@ export async function PATCH(req: NextRequest) {
     return badRequest('End date cannot be before the start date')
 
   const store = getStore()
-  const period = await store.updatePeriod(id, {
-    start_date: patch.start_date,
-    end_date: patch.end_date,
-    flow: (patch.flow ?? undefined) as PeriodEpisode['flow'] | undefined,
-  })
+  const updateData: Partial<Pick<PeriodEpisode, 'start_date' | 'end_date' | 'flow'>> = {}
+  if (patch.start_date !== undefined) updateData.start_date = patch.start_date
+  if (patch.end_date !== undefined) updateData.end_date = patch.end_date
+  if (patch.flow !== undefined) updateData.flow = (patch.flow ?? undefined) as PeriodEpisode['flow'] | undefined
+
+  const period = await store.updatePeriod(id, updateData)
   if (!period) return NextResponse.json({ error: 'Period not found' }, { status: 404 })
   const prediction = await syncPredictionLog() // self-healing recompute (backdated edits included)
   return NextResponse.json({ period, prediction })

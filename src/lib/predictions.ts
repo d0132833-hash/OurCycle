@@ -198,7 +198,7 @@ export function detectTrend(valsRecentFirst: number[]): number | null {
 export function deriveObservations(episodes: EpisodeInput[]): CycleObservation[] {
   const starts = [...episodes]
     .map((e) => e.start_date)
-    .filter((s, i, arr) => s.length === 10 && arr.indexOf(s) === i)
+    .filter((s, i, arr): s is string => typeof s === 'string' && s.length === 10 && arr.indexOf(s) === i)
     .sort()
   const obs: CycleObservation[] = []
   for (let i = 1; i < starts.length; i++) {

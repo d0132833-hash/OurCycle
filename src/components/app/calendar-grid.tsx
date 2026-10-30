@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Download, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { DayEntry, PeriodEpisode } from '@/lib/types'
 import type { Prediction } from '@/lib/predictions'
@@ -263,6 +263,18 @@ export function CalendarGrid({ episodes, entries, prediction }: Props) {
         <Legend className="bg-[#FDBA74]/60 dark:bg-amber-700/60" label="Fertile" />
         <Legend className="bg-card border border-border" dot label="Ovulation" />
         <Legend className="bg-card ring-1 ring-[#E11D48]" label="Today" />
+      </div>
+
+      <div className="mt-4 pt-1">
+        <a
+          href="/api/calendar/ics"
+          download="our-cycle.ics"
+          className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl text-xs font-semibold bg-stone-100 hover:bg-stone-200/80 dark:bg-zinc-800/80 dark:hover:bg-zinc-800 text-stone-700 dark:text-stone-200 transition-colors border border-border/50"
+        >
+          <Calendar className="h-4 w-4 text-primary" />
+          <span>Export Forecast to Phone Calendar (.ics)</span>
+          <Download className="h-3.5 w-3.5 opacity-60 ml-auto" />
+        </a>
       </div>
 
       <DaySheet date={selected} entry={selectedEntry} open={open} onOpenChange={setOpen} />

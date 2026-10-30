@@ -100,8 +100,12 @@ Without Supabase env vars the app transparently falls back to a JSON file store 
 | `/api/days` | GET / POST / PATCH / DELETE | merge-upsert, one record per day |
 | `/api/predictions` | GET | fresh prediction + accuracy report |
 | `/api/settings` | GET / PATCH | override / timezone / bootstrap prior |
+| `/api/calendar/ics` | GET | RFC 5545 calendar feed with reminders |
+| `/api/partner/calendar` | GET | discreet partner companion calendar feed |
+| `/api/export` | GET | complete JSON or CSV data backup |
+| `/report` | GET | printable / PDF clinical summary for doctors |
 
-Session: HMAC-SHA256-signed token in an `httpOnly · Secure · SameSite=Strict` cookie, 30-day sliding refresh. `middleware.ts` guards every page and API path. `noindex` is enforced three ways: meta tag, `X-Robots-Tag` header, `robots.txt` disallow-all.
+Session: HMAC-SHA256-signed token in an `httpOnly · Secure · SameSite=Strict` cookie, 30-day sliding refresh. `src/proxy.ts` (Next.js 16 convention) guards every page and API path. `noindex` is enforced three ways: meta tag, `X-Robots-Tag` header, `robots.txt` disallow-all.
 
 ---
 
@@ -131,7 +135,7 @@ src/lib/predictions.ts      ← PRIORITY 1: pure prediction engine
 src/lib/{dates,types}.ts    ← day-safe date math + domain types
 src/lib/{storage,db}.ts     ← Store interface + Supabase/local adapters
 src/lib/{crypto,session-edge,api-auth,lockout}.ts
-src/middleware.ts           ← edge guard + noindex + sliding refresh
+src/proxy.ts                ← edge guard + noindex + sliding refresh
 src/app/(auth)/…            ← /login, /setup
 src/app/(app)/…             ← Today, Calendar, Insights, Settings
 src/app/api/…               ← the eight route groups above

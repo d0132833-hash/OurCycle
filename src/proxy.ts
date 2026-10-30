@@ -10,7 +10,7 @@ function devSecret(): string {
   return process.env.SESSION_SECRET || (process.env.NODE_ENV !== 'production' ? 'our-cycle-dev-only-secret-change-me' : '')
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
   const secret = devSecret()
   const token = req.cookies.get(SESSION_COOKIE)?.value
@@ -52,6 +52,8 @@ export async function middleware(req: NextRequest) {
 
   return res
 }
+
+export default proxy
 
 export const config = {
   // everything except immutable assets; data routes stay guarded

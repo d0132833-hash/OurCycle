@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { Sparkles, Plus, Minus, Moon, Droplet } from 'lucide-react'
 import {
   Drawer,
   DrawerContent,
@@ -13,7 +14,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   DAY_FLOWS,
   SYMPTOM_KEYS,
@@ -37,6 +37,17 @@ const LIBIDO_EMOJI = ['🌙', '😶', '🙂', '😉', '🔥']
 const INTENSITY = ['–', '·', '··', '···']
 const INTENSITY_LABEL = ['None', 'Mild', 'Moderate', 'Strong']
 
+const QUICK_TAGS = [
+  '#heatingpad',
+  '#painkiller',
+  '#tea',
+  '#walk',
+  '#yoga',
+  '#magnesium',
+  '#stress',
+  '#travel',
+]
+
 function triggerHaptic() {
   if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
     try {
@@ -59,6 +70,8 @@ export interface DayDraft {
   fatigue: number | null
   bbt: string
   weight: string
+  sleep_hours: string
+  water_glasses: number | null
   note: string
 }
 
@@ -76,6 +89,8 @@ const EMPTY: DayDraft = {
   fatigue: null,
   bbt: '',
   weight: '',
+  sleep_hours: '',
+  water_glasses: null,
   note: '',
 }
 
@@ -95,6 +110,8 @@ function fromEntry(e: DayEntry | null): DayDraft {
     fatigue: e.fatigue ?? null,
     bbt: e.bbt != null ? String(e.bbt) : '',
     weight: e.weight != null ? String(e.weight) : '',
+    sleep_hours: e.sleep_hours != null ? String(e.sleep_hours) : '',
+    water_glasses: e.water_glasses ?? null,
     note: e.note ?? '',
   }
 }
@@ -125,24 +142,116 @@ export function DaySheet({ date, entry, open, onOpenChange }: Props) {
     [draft, entry],
   )
 
+  // Quick Preset Handlers
+  const applyPreset = (preset: 'high-energy' | 'cramp-rest' | 'pms-comfort' | 'gentle-reset') => {
+    triggerHaptic()
+    if (preset === 'high-energy') {
+      setDraft((d) => ({
+        ...d,
+        mood: 5,
+        energy: 5,
+        libido: 4,
+        note: d.note.includes('#workout') ? d.note : `${d.note} #workout`.trim(),
+      }))
+      toast.success('Applied "High Energy" preset')
+    } else if (preset === 'cramp-rest') {
+      setDraft((d) => ({
+        ...d,
+        cramps: 2,
+        fatigue: 2,
+        mood: 2,
+        energy: 1,
+        note: d.note.includes('#heatingpad') ? d.note : `${d.note} #heatingpad`.trim(),
+      }))
+      toast.success('Applied "Cramps & Rest" preset')
+    } else if (preset === 'pms-comfort') {
+      setDraft((d) => ({
+        ...d,
+        bloating: 2,
+        breast_tenderness: 1,
+        mood: 2,
+        energy: 2,
+        note: d.note.includes('#tea') ? d.note : `${d.note} #tea`.trim(),
+      }))
+      toast.success('Applied "PMS Comfort" preset')
+    } else if (preset === 'gentle-reset') {
+      setDraft((d) => ({
+        ...d,
+        mood: 4,
+        energy: 3,
+        note: d.note.includes('#yoga') ? d.note : `${d.note} #yoga`.trim(),
+      }))
+      toast.success('Applied "Gentle Reset" preset')
+    }
+  }
+
+  // Toggle quick tag in journal note
+  const toggleTag = (tag: string) => {
+    triggerHaptic()
+    setDraft((d) => {
+      const current = d.note
+      if (current.includes(tag)) {
+        return { ...d, note: current.replace(tag, '').replace(/\s+/g, ' ').trim() }
+      } else {
+        return { ...d, note: `${current} ${tag}`.trim() }
+      }
+    })
+  }
+
   async function save() {
     if (!date || saving) return
     setSaving(true)
     triggerHaptic()
     try {
-      const payload: Record<string, unknown> = { date }
-      if (draft.flow !== null) payload.flow = draft.flow
-      for (const k of ['mood', 'energy', 'libido'] as const) if (draft[k] !== null) payload[k] = draft[k]
-      for (const k of SYMPTOM_KEYS) if (draft[k] !== null) payload[k] = draft[k]
+      const payload: Record<string, unknown> = {
+        date,
+        flow: draft.flow,
+        mood: draft.mood,
+        energy: draft.energy,
+        libido: draft.libido,
+      }
+      for (const k of SYMPTOM_KEYS) {
+        payload[k] = draft[k]
+      }
+
       if (draft.bbt.trim() !== '') {
         const num = parseFloat(draft.bbt)
-        if (!isNaN(num)) payload.bbt = num
+        if (isNaN(num) || num < 30 || num > 110) {
+          toast.error('BBT temperature should be between 30 and 110')
+          setSaving(false)
+          return
+        }
+        payload.bbt = num
+      } else {
+        payload.bbt = null
       }
+
       if (draft.weight.trim() !== '') {
         const num = parseFloat(draft.weight)
-        if (!isNaN(num)) payload.weight = num
+        if (isNaN(num) || num < 20 || num > 300) {
+          toast.error('Weight should be between 20 and 300')
+          setSaving(false)
+          return
+        }
+        payload.weight = num
+      } else {
+        payload.weight = null
       }
-      if (draft.note.trim() !== '') payload.note = draft.note.trim()
+
+      if (draft.sleep_hours.trim() !== '') {
+        const num = parseFloat(draft.sleep_hours)
+        if (isNaN(num) || num < 0 || num > 24) {
+          toast.error('Sleep hours should be between 0 and 24')
+          setSaving(false)
+          return
+        }
+        payload.sleep_hours = num
+      } else {
+        payload.sleep_hours = null
+      }
+
+      payload.water_glasses = draft.water_glasses
+      payload.note = draft.note.trim() !== '' ? draft.note.trim() : null
 
       const where = await saveWithOfflineFallback('day', payload)
       toast.success(
@@ -186,6 +295,44 @@ export function DaySheet({ date, entry, open, onOpenChange }: Props) {
         </DrawerHeader>
 
         <div className="nice-scroll flex-1 min-h-0 overflow-y-auto px-4 pb-4 space-y-5">
+          {/* Quick 1-Tap Presets */}
+          <section className="bg-rose-50/50 dark:bg-zinc-800/40 p-3 rounded-2xl border border-rose-100 dark:border-rose-950/40">
+            <div className="flex items-center gap-1.5 mb-2 text-xs font-semibold text-primary">
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>1-Tap Quick Presets</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => applyPreset('high-energy')}
+                className="py-1.5 px-2.5 rounded-xl text-left bg-white dark:bg-zinc-800 text-[11px] font-medium border border-border shadow-xs hover:border-primary/40 active:scale-95 transition-all"
+              >
+                ⚡ High Energy
+              </button>
+              <button
+                type="button"
+                onClick={() => applyPreset('cramp-rest')}
+                className="py-1.5 px-2.5 rounded-xl text-left bg-white dark:bg-zinc-800 text-[11px] font-medium border border-border shadow-xs hover:border-primary/40 active:scale-95 transition-all"
+              >
+                🛌 Cramp &amp; Rest
+              </button>
+              <button
+                type="button"
+                onClick={() => applyPreset('pms-comfort')}
+                className="py-1.5 px-2.5 rounded-xl text-left bg-white dark:bg-zinc-800 text-[11px] font-medium border border-border shadow-xs hover:border-primary/40 active:scale-95 transition-all"
+              >
+                🌙 PMS Comfort
+              </button>
+              <button
+                type="button"
+                onClick={() => applyPreset('gentle-reset')}
+                className="py-1.5 px-2.5 rounded-xl text-left bg-white dark:bg-zinc-800 text-[11px] font-medium border border-border shadow-xs hover:border-primary/40 active:scale-95 transition-all"
+              >
+                🧘 Gentle Reset
+              </button>
+            </div>
+          </section>
+
           {/* Flow */}
           <section>
             <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Flow</h3>
@@ -203,64 +350,147 @@ export function DaySheet({ date, entry, open, onOpenChange }: Props) {
             </div>
           </section>
 
-          {/* Mood / Energy / Libido */}
-          <section>
-            <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Mood</h3>
-            <Scale emojis={MOOD_EMOJI} value={draft.mood} onChange={(v) => set('mood', v)} />
-          </section>
-          <section>
-            <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Energy</h3>
-            <Scale emojis={ENERGY_EMOJI} value={draft.energy} onChange={(v) => set('energy', v)} />
-          </section>
-          <section>
-            <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Sex drive</h3>
-            <Scale emojis={LIBIDO_EMOJI} value={draft.libido} onChange={(v) => set('libido', v)} />
-          </section>
+          {/* Scales: mood, energy, libido */}
+          <section className="space-y-3">
+            <div>
+              <div className="mb-1.5 flex items-center justify-between text-sm">
+                <span className="font-semibold text-muted-foreground">Mood</span>
+                <span className="text-xs text-muted-foreground">
+                  {draft.mood ? `${draft.mood}/5` : 'Not set'}
+                </span>
+              </div>
+              <Scale emojis={MOOD_EMOJI} value={draft.mood} onChange={(v) => set('mood', v)} />
+            </div>
 
-          {/* Symptoms */}
-          <section>
-            <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
-              Pain &amp; symptoms
-            </h3>
-            <div className="space-y-2.5">
-              {SYMPTOM_KEYS.map((s) => (
-                <div key={s} className="flex items-center justify-between gap-3">
-                  <span className="w-36 shrink-0 text-sm">{SYMPTOM_LABELS[s]}</span>
-                  <div className="flex gap-1.5">
-                    {[0, 1, 2, 3].map((lvl) => {
-                      const selected = (draft[s] ?? 0) === lvl && draft[s] !== null
-                      return (
-                        <button
-                          key={lvl}
-                          type="button"
-                          aria-label={`${SYMPTOM_LABELS[s]}: ${INTENSITY_LABEL[lvl]}`}
-                          onClick={() => set(s, lvl === 0 ? null : lvl)}
-                          className={`flex h-9 w-9 items-center justify-center rounded-full border text-xs transition-colors ${
-                            selected
-                              ? 'border-transparent bg-primary text-primary-foreground shadow-sm'
-                              : 'border-[rgba(225,29,72,0.16)] bg-white/65 text-muted-foreground dark:bg-zinc-800/60 dark:border-zinc-700'
-                          }`}
-                        >
-                          {INTENSITY[lvl]}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              ))}
+            <div>
+              <div className="mb-1.5 flex items-center justify-between text-sm">
+                <span className="font-semibold text-muted-foreground">Energy</span>
+                <span className="text-xs text-muted-foreground">
+                  {draft.energy ? `${draft.energy}/5` : 'Not set'}
+                </span>
+              </div>
+              <Scale
+                emojis={ENERGY_EMOJI}
+                value={draft.energy}
+                onChange={(v) => set('energy', v)}
+              />
+            </div>
+
+            <div>
+              <div className="mb-1.5 flex items-center justify-between text-sm">
+                <span className="font-semibold text-muted-foreground">Sex drive</span>
+                <span className="text-xs text-muted-foreground">
+                  {draft.libido ? `${draft.libido}/5` : 'Not set'}
+                </span>
+              </div>
+              <Scale
+                emojis={LIBIDO_EMOJI}
+                value={draft.libido}
+                onChange={(v) => set('libido', v)}
+              />
             </div>
           </section>
 
-          {/* Optional BBT & Weight */}
-          <section className="grid grid-cols-2 gap-3 pt-1">
+          {/* Symptoms grid: 0 (none) -> 3 (strong) */}
+          <section>
+            <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Symptoms</h3>
+            <div className="grid grid-cols-2 gap-2">
+              {SYMPTOM_KEYS.map((k) => {
+                const val = draft[k] ?? 0
+                return (
+                  <div
+                    key={k}
+                    className="flex items-center justify-between rounded-xl border border-[rgba(225,29,72,0.14)] bg-white/65 p-2.5 text-xs dark:bg-zinc-800/60 dark:border-zinc-700"
+                  >
+                    <span className="truncate pr-1 font-medium">{SYMPTOM_LABELS[k]}</span>
+                    <div className="flex gap-1 shrink-0">
+                      {[0, 1, 2, 3].map((lvl) => (
+                        <button
+                          key={lvl}
+                          type="button"
+                          onClick={() => set(k, lvl === val ? null : lvl)}
+                          className={`flex h-7 w-7 items-center justify-center rounded-lg text-xs font-semibold transition-all ${
+                            val === lvl && lvl > 0
+                              ? 'bg-primary text-primary-foreground shadow-xs'
+                              : val === lvl && lvl === 0
+                              ? 'bg-stone-200 text-stone-700 dark:bg-zinc-700 dark:text-zinc-200'
+                              : 'bg-stone-100 text-muted-foreground hover:bg-stone-200/70 dark:bg-zinc-900/60'
+                          }`}
+                          aria-label={`${SYMPTOM_LABELS[k]}: ${INTENSITY_LABEL[lvl]}`}
+                        >
+                          {INTENSITY[lvl]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+
+          {/* Lifestyle: Sleep & Hydration */}
+          <section>
+            <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Sleep &amp; Hydration</h3>
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="rounded-xl border border-[rgba(225,29,72,0.16)] bg-white/70 p-3 dark:bg-zinc-900/60">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground mb-1.5">
+                  <Moon className="h-3.5 w-3.5 text-indigo-500" />
+                  <span>Sleep (hours)</span>
+                </div>
+                <Input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  max="24"
+                  placeholder="e.g. 7.5"
+                  value={draft.sleep_hours}
+                  onChange={(e) => set('sleep_hours', e.target.value)}
+                  className="h-9 rounded-lg text-xs border-0 bg-stone-100 dark:bg-zinc-800"
+                />
+              </div>
+
+              <div className="rounded-xl border border-[rgba(225,29,72,0.16)] bg-white/70 p-3 dark:bg-zinc-900/60">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground mb-1.5">
+                  <Droplet className="h-3.5 w-3.5 text-sky-500" />
+                  <span>Water (glasses)</span>
+                </div>
+                <div className="flex items-center justify-between bg-stone-100 dark:bg-zinc-800 rounded-lg p-1 h-9">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      triggerHaptic()
+                      set('water_glasses', Math.max(0, (draft.water_glasses || 0) - 1))
+                    }}
+                    className="h-7 w-7 rounded-md bg-white dark:bg-zinc-700 flex items-center justify-center text-xs shadow-xs"
+                  >
+                    <Minus className="h-3 w-3" />
+                  </button>
+                  <span className="text-xs font-bold">{draft.water_glasses || 0}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      triggerHaptic()
+                      set('water_glasses', (draft.water_glasses || 0) + 1)
+                    }}
+                    className="h-7 w-7 rounded-md bg-white dark:bg-zinc-700 flex items-center justify-center text-xs shadow-xs"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Temperature & weight */}
+          <section className="grid grid-cols-2 gap-2.5">
             <div>
               <label className="mb-1 block text-xs font-semibold text-muted-foreground">
-                Body Temp (°C/°F)
+                BBT temp (°C / °F)
               </label>
               <Input
                 type="number"
-                step="0.05"
-                placeholder="e.g. 36.6 or 97.8"
+                step="0.01"
+                placeholder="e.g. 36.4"
                 value={draft.bbt}
                 onChange={(e) => set('bbt', e.target.value)}
                 className="rounded-xl border-[rgba(225,29,72,0.16)] bg-white/70 text-sm dark:bg-zinc-900/60"
@@ -268,7 +498,7 @@ export function DaySheet({ date, entry, open, onOpenChange }: Props) {
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold text-muted-foreground">
-                Weight (kg/lbs)
+                Weight (kg / lbs)
               </label>
               <Input
                 type="number"
@@ -278,6 +508,33 @@ export function DaySheet({ date, entry, open, onOpenChange }: Props) {
                 onChange={(e) => set('weight', e.target.value)}
                 className="rounded-xl border-[rgba(225,29,72,0.16)] bg-white/70 text-sm dark:bg-zinc-900/60"
               />
+            </div>
+          </section>
+
+          {/* Quick Tags */}
+          <section>
+            <div className="flex items-center justify-between mb-1.5">
+              <h3 className="text-sm font-semibold text-muted-foreground">Quick Tags</h3>
+              <span className="text-[10px] text-muted-foreground">Tap to add to note</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {QUICK_TAGS.map((tag) => {
+                const active = draft.note.includes(tag)
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => toggleTag(tag)}
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
+                      active
+                        ? 'bg-primary text-primary-foreground border-primary shadow-xs'
+                        : 'bg-white/80 dark:bg-zinc-800 border-border text-stone-700 dark:text-stone-300 hover:border-primary/40'
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                )
+              })}
             </div>
           </section>
 

@@ -27,6 +27,12 @@ export interface DayInput {
   acne?: number | null
   bloating?: number | null
   fatigue?: number | null
+  bbt?: number | null
+  weight?: number | null
+  sleep_hours?: number | null
+  water_glasses?: number | null
+  exercise?: string | null
+  tags?: string[] | null
   note?: string | null
 }
 

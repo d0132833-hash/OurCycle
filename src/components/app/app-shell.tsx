@@ -2,9 +2,9 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { CalendarDays, Heart, Settings, Sparkles } from 'lucide-react'
+import { CalendarDays, Heart, Settings, Sparkles, BookOpen } from 'lucide-react'
 import { toast } from 'sonner'
 import { flushQueue, queueSize } from '@/lib/client/offline-queue'
 import { RegisterSW } from '@/components/pwa/register-sw'
@@ -27,6 +27,23 @@ function triggerHaptic() {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
+  const [discreet, setDiscreet] = useState(false)
+
+  // Listen for and apply palette and discreet mode from localStorage
+  useEffect(() => {
+    const applyPreferences = () => {
+      try {
+        const pal = localStorage.getItem('ourcycle.palette') || 'rose'
+        document.documentElement.setAttribute('data-palette', pal)
+        const isDiscreet = localStorage.getItem('ourcycle.discreet') === 'true'
+        setDiscreet(isDiscreet)
+      } catch {}
+    }
+
+    applyPreferences()
+    window.addEventListener('ourcycle:theme-change', applyPreferences)
+    return () => window.removeEventListener('ourcycle:theme-change', applyPreferences)
+  }, [])
 
   // Offline day-log queue: replay whenever the connection returns.
   useEffect(() => {
@@ -54,10 +71,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <RegisterSW />
       <header className="sticky top-0 z-30 -mx-4 px-4 pt-4 pb-3 bg-[#FDF2F4]/95 dark:bg-[#181514]/95 backdrop-blur-md border-b border-border/40 transition-colors">
         <div className="flex items-center gap-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-            <Heart className="h-5 w-5 text-primary" fill="currentColor" aria-hidden />
-          </span>
-          <h1 className="font-display text-xl font-semibold tracking-tight">Our Cycle</h1>
+          {discreet ? (
+            <>
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-stone-200 dark:bg-zinc-800 text-stone-700 dark:text-stone-300">
+                <BookOpen className="h-4.5 w-4.5" aria-hidden />
+              </span>
+              <h1 className="font-display text-xl font-semibold tracking-tight text-foreground">Personal Notes</h1>
+            </>
+          ) : (
+            <>
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+                <Heart className="h-5 w-5 text-primary" fill="currentColor" aria-hidden />
+              </span>
+              <h1 className="font-display text-xl font-semibold tracking-tight">Our Cycle</h1>
+            </>
+          )}
         </div>
       </header>
 

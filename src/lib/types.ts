@@ -54,6 +54,10 @@ export interface DayEntry {
   fatigue: number | null
   bbt?: number | null
   weight?: number | null
+  sleep_hours?: number | null
+  water_glasses?: number | null
+  exercise?: string | null
+  tags?: string[] | null
   note: string | null
   created_at?: string
   updated_at?: string
@@ -90,6 +94,11 @@ export interface PredictionLogRow {
 
 export type Phase = 'menstrual' | 'follicular' | 'ovulation' | 'luteal'
 export type Confidence = 'high' | 'medium' | 'low'
+
+export interface Regularity {
+  sigma: number | null
+  label: 'Regular' | 'Varies' | 'Irregular'
+}
 
 export interface AccuracyReport {
   evaluated: number // completed predictions looked at (max 6)

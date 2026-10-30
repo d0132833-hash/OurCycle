@@ -47,6 +47,8 @@ import {
   Monitor,
   AlertTriangle,
   Plus,
+  Calendar,
+  FileText,
 } from 'lucide-react'
 import type { AppSettings, PeriodEpisode } from '@/lib/types'
 import { RotateForm } from './vault-forms'
@@ -93,6 +95,36 @@ export function SettingsView({
   const [tz, setTz] = useState(settings.timezone)
   const [savingCycle, setSavingCycle] = useState(false)
   const [savingTz, setSavingTz] = useState(false)
+  const [palette, setPalette] = useState('rose')
+  const [discreet, setDiscreet] = useState(false)
+
+  useEffect(() => {
+    try {
+      const pal = localStorage.getItem('ourcycle.palette') || 'rose'
+      setPalette(pal)
+      const d = localStorage.getItem('ourcycle.discreet') === 'true'
+      setDiscreet(d)
+    } catch {}
+  }, [])
+
+  const updatePalette = (newPal: string) => {
+    setPalette(newPal)
+    try {
+      localStorage.setItem('ourcycle.palette', newPal)
+      document.documentElement.setAttribute('data-palette', newPal)
+      window.dispatchEvent(new CustomEvent('ourcycle:theme-change'))
+      toast.success(`Theme palette set to ${newPal.charAt(0).toUpperCase() + newPal.slice(1)}`)
+    } catch {}
+  }
+
+  const updateDiscreet = (val: boolean) => {
+    setDiscreet(val)
+    try {
+      localStorage.setItem('ourcycle.discreet', String(val))
+      window.dispatchEvent(new CustomEvent('ourcycle:theme-change'))
+      toast.success(val ? 'Discreet disguise mode enabled' : 'Discreet mode disabled')
+    } catch {}
+  }
 
   // Period history editing state
   const [periods, setPeriods] = useState<PeriodEpisode[]>(initialPeriods)
@@ -324,6 +356,72 @@ export function SettingsView({
               System
             </Button>
           </div>
+
+          {/* Color Palettes */}
+          <div className="mt-4 pt-3 border-t border-border/50">
+            <h4 className="text-xs font-semibold text-foreground mb-2">Color Palette</h4>
+            <div className="grid grid-cols-4 gap-2">
+              <button
+                type="button"
+                onClick={() => updatePalette('rose')}
+                className={`flex flex-col items-center gap-1.5 p-2 rounded-xl text-[11px] font-medium border transition-all ${
+                  palette === 'rose'
+                    ? 'border-primary bg-primary/10 text-primary shadow-xs'
+                    : 'border-border bg-stone-50 dark:bg-zinc-800 text-stone-700 dark:text-stone-300'
+                }`}
+              >
+                <span className="h-4 w-4 rounded-full bg-[#E11D48] ring-1 ring-black/10" />
+                <span>Rose</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => updatePalette('lavender')}
+                className={`flex flex-col items-center gap-1.5 p-2 rounded-xl text-[11px] font-medium border transition-all ${
+                  palette === 'lavender'
+                    ? 'border-[#7C3AED] bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 shadow-xs'
+                    : 'border-border bg-stone-50 dark:bg-zinc-800 text-stone-700 dark:text-stone-300'
+                }`}
+              >
+                <span className="h-4 w-4 rounded-full bg-[#7C3AED] ring-1 ring-black/10" />
+                <span>Lavender</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => updatePalette('sage')}
+                className={`flex flex-col items-center gap-1.5 p-2 rounded-xl text-[11px] font-medium border transition-all ${
+                  palette === 'sage'
+                    ? 'border-[#059669] bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 shadow-xs'
+                    : 'border-border bg-stone-50 dark:bg-zinc-800 text-stone-700 dark:text-stone-300'
+                }`}
+              >
+                <span className="h-4 w-4 rounded-full bg-[#059669] ring-1 ring-black/10" />
+                <span>Sage</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => updatePalette('terracotta')}
+                className={`flex flex-col items-center gap-1.5 p-2 rounded-xl text-[11px] font-medium border transition-all ${
+                  palette === 'terracotta'
+                    ? 'border-[#EA580C] bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 shadow-xs'
+                    : 'border-border bg-stone-50 dark:bg-zinc-800 text-stone-700 dark:text-stone-300'
+                }`}
+              >
+                <span className="h-4 w-4 rounded-full bg-[#EA580C] ring-1 ring-black/10" />
+                <span>Terracotta</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Discreet Privacy Disguise Mode */}
+          <div className="mt-4 pt-3 border-t border-border/50 flex items-center justify-between gap-3">
+            <div>
+              <h4 className="text-xs font-semibold text-foreground">Discreet Privacy Mode</h4>
+              <p className="text-[11px] text-muted-foreground mt-0.5 max-w-[240px]">
+                Disguises the app title and headings as a private journal in public spaces.
+              </p>
+            </div>
+            <Switch checked={discreet} onCheckedChange={updateDiscreet} aria-label="Toggle discreet mode" />
+          </div>
         </CardContent>
       </Card>
 
@@ -509,6 +607,23 @@ export function SettingsView({
               <FileSpreadsheet className="mr-1.5 h-3.5 w-3.5 text-primary" />
               Download CSV
             </Button>
+            <a
+              href="/api/calendar/ics"
+              download="our-cycle.ics"
+              className="flex items-center justify-center h-10 rounded-xl text-xs font-medium border border-[rgba(225,29,72,0.2)] bg-card hover:bg-accent text-foreground transition-colors"
+            >
+              <Calendar className="mr-1.5 h-3.5 w-3.5 text-primary" />
+              Calendar (.ics)
+            </a>
+            <a
+              href="/report"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center h-10 rounded-xl text-xs font-medium border border-[rgba(225,29,72,0.2)] bg-card hover:bg-accent text-foreground transition-colors"
+            >
+              <FileText className="mr-1.5 h-3.5 w-3.5 text-primary" />
+              Doctor Report (PDF)
+            </a>
           </div>
         </CardContent>
       </Card>

@@ -158,6 +158,12 @@ export class SupabaseStore implements Store {
           acne: null,
           bloating: null,
           fatigue: null,
+          bbt: null,
+          weight: null,
+          sleep_hours: null,
+          water_glasses: null,
+          exercise: null,
+          tags: null,
           note: null,
         }
     if (input.flow !== undefined) row.flow = input.flow
@@ -165,6 +171,12 @@ export class SupabaseStore implements Store {
       const v = input[f as keyof DayInput]
       if (v !== undefined) row[f] = v
     }
+    if (input.bbt !== undefined) row.bbt = input.bbt
+    if (input.weight !== undefined) row.weight = input.weight
+    if (input.sleep_hours !== undefined) row.sleep_hours = input.sleep_hours
+    if (input.water_glasses !== undefined) row.water_glasses = input.water_glasses
+    if (input.exercise !== undefined) row.exercise = input.exercise
+    if (input.tags !== undefined) row.tags = input.tags
     if (input.note !== undefined) row.note = input.note
     row.updated_at = new Date().toISOString()
 

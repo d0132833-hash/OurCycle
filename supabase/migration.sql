@@ -40,6 +40,12 @@ create table if not exists day_entries (
   acne int check (acne between 0 and 3),
   bloating int check (bloating between 0 and 3),
   fatigue int check (fatigue between 0 and 3),
+  bbt numeric(4,2),
+  weight numeric(5,2),
+  sleep_hours numeric(3,1),
+  water_glasses int,
+  exercise text,
+  tags text[],
   note text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()

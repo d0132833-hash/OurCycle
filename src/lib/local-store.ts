@@ -154,9 +154,13 @@ export class LocalFileStore implements Store {
     const idx = db.periods.findIndex((p) => p.id === id)
     if (idx === -1) return null
     const existing = db.periods[idx]
+    const cleanPatch: any = {}
+    for (const [k, v] of Object.entries(patch)) {
+      if (v !== undefined) cleanPatch[k] = v
+    }
     const updated: PeriodEpisode = {
       ...existing,
-      ...patch,
+      ...cleanPatch,
       updated_at: new Date().toISOString(),
     }
     db.periods[idx] = updated
@@ -200,6 +204,10 @@ export class LocalFileStore implements Store {
           fatigue: null,
           bbt: null,
           weight: null,
+          sleep_hours: null,
+          water_glasses: null,
+          exercise: null,
+          tags: null,
           note: null,
           created_at: new Date().toISOString(),
         }
@@ -213,6 +221,10 @@ export class LocalFileStore implements Store {
     }
     if ((input as any).bbt !== undefined) row.bbt = (input as any).bbt
     if ((input as any).weight !== undefined) row.weight = (input as any).weight
+    if (input.sleep_hours !== undefined) row.sleep_hours = input.sleep_hours
+    if (input.water_glasses !== undefined) row.water_glasses = input.water_glasses
+    if (input.exercise !== undefined) row.exercise = input.exercise
+    if (input.tags !== undefined) row.tags = input.tags
     if (input.note !== undefined) row.note = input.note
     row.updated_at = new Date().toISOString()
 
