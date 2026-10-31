@@ -22,6 +22,7 @@ import {
   ExternalLink,
   Plus,
   Trash2,
+  SlidersHorizontal,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { DayEntry, Phase } from '@/lib/types'
@@ -38,6 +39,7 @@ import {
   addCustomShoppingTag,
   toggleCustomShoppingTag,
   removeCustomShoppingTag,
+  setBatteryOverrideTag,
   type DynamicText,
   type GroceryItem,
 } from '@/lib/partner-intelligence'
@@ -140,6 +142,9 @@ export function PartnerView({ prediction, todayEntry, today }: PartnerViewProps)
   const [checkedGrocery, setCheckedGrocery] = useState<Record<string, boolean>>({})
   const [customItemInput, setCustomItemInput] = useState('')
   const [isAddingItem, setIsAddingItem] = useState(false)
+  const [isAdjustingBattery, setIsAdjustingBattery] = useState(false)
+  const [draftBattery, setDraftBattery] = useState(50)
+  const [isSavingBattery, setIsSavingBattery] = useState(false)
 
   const currentTags = todayEntry?.tags ?? []
   const [localTags, setLocalTags] = useState<string[]>(currentTags)
@@ -150,13 +155,19 @@ export function PartnerView({ prediction, todayEntry, today }: PartnerViewProps)
 
   const customItems = useMemo(() => parseCustomShoppingItems(localTags), [localTags])
 
+  const activeEntry = useMemo(() => {
+    return todayEntry
+      ? { ...todayEntry, tags: localTags }
+      : ({ date: today, tags: localTags } as DayEntry)
+  }, [todayEntry, localTags, today])
+
   const phase: Phase = prediction.todayPhase || 'follicular'
   const guide = PARTNER_PHASE_GUIDE[phase]
 
   // Calculate energy & battery
   const battery = useMemo(
-    () => calculateEnergyBattery(phase, todayEntry),
-    [phase, todayEntry],
+    () => calculateEnergyBattery(phase, activeEntry),
+    [phase, activeEntry],
   )
 
   // Mindset guidance & golden rule
@@ -337,6 +348,62 @@ export function PartnerView({ prediction, todayEntry, today }: PartnerViewProps)
     }
   }
 
+  // Save manual social battery adjustment
+  const handleSaveBattery = async () => {
+    setIsSavingBattery(true)
+    triggerHaptic()
+    const newTags = setBatteryOverrideTag(localTags, draftBattery)
+    setLocalTags(newTags)
+    setIsAdjustingBattery(false)
+
+    try {
+      const res = await fetch('/api/days', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: today,
+          tags: newTags,
+        }),
+      })
+      if (!res.ok) throw new Error('Could not save battery adjustment')
+      toast.success(`Social battery adjusted to ${draftBattery}% 💕`)
+      router.refresh()
+    } catch {
+      setLocalTags(currentTags)
+      toast.error('Failed to save social battery adjustment')
+    } finally {
+      setIsSavingBattery(false)
+    }
+  }
+
+  // Reset social battery back to automated estimate
+  const handleResetBattery = async () => {
+    setIsSavingBattery(true)
+    triggerHaptic()
+    const newTags = setBatteryOverrideTag(localTags, null)
+    setLocalTags(newTags)
+    setIsAdjustingBattery(false)
+
+    try {
+      const res = await fetch('/api/days', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: today,
+          tags: newTags,
+        }),
+      })
+      if (!res.ok) throw new Error('Could not reset battery')
+      toast.success('Reset social battery to automated estimate')
+      router.refresh()
+    } catch {
+      setLocalTags(currentTags)
+      toast.error('Failed to reset social battery')
+    } finally {
+      setIsSavingBattery(false)
+    }
+  }
+
   // Copy remaining shopping items (both custom and curated)
   const handleCopyGroceryList = async () => {
     triggerHaptic()
@@ -406,14 +473,24 @@ export function PartnerView({ prediction, todayEntry, today }: PartnerViewProps)
         </div>
 
         {/* Social Battery & Capacity Gauge */}
-        <div className="card-soft p-5 space-y-3 flex flex-col justify-between">
+        <div className="card-soft p-5 space-y-3.5 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
-                <Battery className="h-4 w-4 text-emerald-500" />
-                <span>Estimated Energy &amp; Social Battery</span>
+                <Battery
+                  className={`h-4 w-4 ${battery.isManual ? 'text-rose-500' : 'text-emerald-500'}`}
+                />
+                <span>
+                  {battery.isManual ? 'Her Adjusted Social Battery' : 'Estimated Energy & Social Battery'}
+                </span>
               </div>
               <div className="flex items-center gap-1.5">
+                {battery.isManual && (
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 flex items-center gap-1">
+                    <Heart className="h-2.5 w-2.5 fill-rose-500" />
+                    <span>Adjusted by Her</span>
+                  </span>
+                )}
                 <span
                   className={`text-xs font-bold px-2 py-0.5 rounded-full ${battery.badgeColor}`}
                 >
@@ -434,6 +511,122 @@ export function PartnerView({ prediction, todayEntry, today }: PartnerViewProps)
           <p className="text-xs text-muted-foreground leading-relaxed">
             {battery.summary}
           </p>
+
+          {/* Inline Battery Adjustment for Her */}
+          <div className="pt-2 border-t border-border/40">
+            {!isAdjustingBattery ? (
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic()
+                    setDraftBattery(battery.percentage)
+                    setIsAdjustingBattery(true)
+                  }}
+                  className="flex items-center gap-1.5 text-xs text-primary font-medium hover:underline"
+                >
+                  <SlidersHorizontal className="h-3.5 w-3.5" />
+                  <span>
+                    {battery.isManual ? 'Modify battery level' : 'Estimate inaccurate? Adjust battery'}
+                  </span>
+                </button>
+                {battery.isManual && (
+                  <button
+                    type="button"
+                    onClick={handleResetBattery}
+                    disabled={isSavingBattery}
+                    className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Reset auto
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-3 pt-1 animate-in fade-in duration-150">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-semibold text-foreground flex items-center gap-1">
+                      <span>Adjust Her Real-Time Social Battery</span>
+                    </span>
+                    <p className="text-[10px] text-muted-foreground">
+                      Slide or tap a preset to set how she actually feels today
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-primary px-2 py-0.5 rounded-lg bg-primary/10">
+                    {draftBattery}%
+                  </span>
+                </div>
+
+                {/* Range Slider */}
+                <input
+                  type="range"
+                  min={10}
+                  max={100}
+                  step={5}
+                  value={draftBattery}
+                  onChange={(e) => setDraftBattery(Number(e.target.value))}
+                  className="w-full accent-primary h-2 bg-stone-100 dark:bg-zinc-800 rounded-lg cursor-pointer"
+                />
+
+                {/* 5 Quick Presets */}
+                <div className="grid grid-cols-5 gap-1 text-center">
+                  {[
+                    { label: 'Very Low', pct: 15 },
+                    { label: 'Low', pct: 30 },
+                    { label: 'Moderate', pct: 55 },
+                    { label: 'High', pct: 75 },
+                    { label: 'Peak', pct: 95 },
+                  ].map((p) => (
+                    <button
+                      key={p.pct}
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic()
+                        setDraftBattery(p.pct)
+                      }}
+                      className={`py-1 px-1 rounded-lg text-[10px] font-medium transition-all ${
+                        draftBattery === p.pct
+                          ? 'bg-primary text-white shadow-sm'
+                          : 'bg-stone-100 dark:bg-zinc-800 text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setIsAdjustingBattery(false)}
+                    className="px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground rounded-lg"
+                  >
+                    Cancel
+                  </button>
+                  {battery.isManual && (
+                    <button
+                      type="button"
+                      onClick={handleResetBattery}
+                      disabled={isSavingBattery}
+                      className="px-2.5 py-1 text-xs text-stone-600 dark:text-stone-300 hover:text-rose-500 rounded-lg"
+                    >
+                      Reset auto
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleSaveBattery}
+                    disabled={isSavingBattery}
+                    className="px-3 py-1 text-xs font-medium bg-primary text-white rounded-lg hover:bg-primary/90 transition-all flex items-center gap-1 shadow-sm"
+                  >
+                    <Check className="h-3 w-3" />
+                    <span>Save {draftBattery}%</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

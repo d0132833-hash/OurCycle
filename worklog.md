@@ -185,4 +185,29 @@ Work Log:
 - Updated all system documentation files (`README.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `worklog.md`).
 - Pushed changes to GitHub remote (`origin main`).
 
+---
+Task ID: 6
+Agent: Antigravity
+Task: Implement manual social battery adjustment in the Partners tab only for real-time accuracy tuning.
+
+Work Log:
+- Implemented real-time Social Battery manual adjustment in the Partners tab:
+  - Added pure helpers in `src/lib/partner-intelligence.ts`: `extractBatteryOverride`, `setBatteryOverrideTag`, and `getBatteryScoreForPercentage`.
+  - Refactored `calculateEnergyBattery` to prioritize manual override when present in `day_entries.tags`, returning self-reported percentage and `isManual: true`.
+  - Added `isManual?: boolean` property to `BatteryScore` interface.
+  - Enhanced `src/components/app/partner-view.tsx` with an inline adjustment controller inside the "Estimated Energy & Social Battery" card:
+    - Added an "Estimate inaccurate? Adjust battery" trigger button.
+    - Added an interactive range slider (10% to 100%) with live percentage display.
+    - Added 5 instant quick preset pills: *Very Low (15%)*, *Low (30%)*, *Moderate (55%)*, *High (75%)*, *Peak (95%)*.
+    - Added "Adjusted by Her 💕" visual pill badging when overridden.
+    - Added a 1-tap "Reset auto" button to restore algorithmic calculation.
+    - Persisted changes to vault via `/api/days` using the `battery:override:<percentage>` tag.
+- Testing & Quality Verification:
+  - Added 3 new Vitest unit tests in `tests/partner-intelligence.test.ts` verifying tag parsing, clamping, tag replacement, and manual override precedence (88/88 tests passing).
+  - TypeScript compiler (`npx tsc --noEmit`): clean with 0 errors.
+  - Next.js production build (`npm run build`): compiled cleanly in Turbopack.
+- Updated all system documentation files (`README.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `worklog.md`).
+- Pushed changes to GitHub remote (`origin main`).
+
+
 

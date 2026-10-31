@@ -11,6 +11,8 @@ import {
   addCustomShoppingTag,
   toggleCustomShoppingTag,
   removeCustomShoppingTag,
+  extractBatteryOverride,
+  setBatteryOverrideTag,
 } from '@/lib/partner-intelligence'
 import type { DayEntry, Phase } from '@/lib/types'
 import { computePredictions } from '@/lib/predictions'
@@ -404,6 +406,66 @@ describe('Partner Intelligence & Empathy Engine', () => {
       expect(removed).toEqual(['need:tea', 'shop:done:Tea'])
     })
   })
+
+  // --------------------------------------------------------------------------
+  // 10. Social Battery Manual Adjustment in Partners Tab
+  // --------------------------------------------------------------------------
+  describe('Social Battery Manual Adjustment', () => {
+    it('extracts battery override from tags', () => {
+      expect(extractBatteryOverride(null)).toBeNull()
+      expect(extractBatteryOverride([])).toBeNull()
+      expect(extractBatteryOverride(['need:tea'])).toBeNull()
+      expect(extractBatteryOverride(['need:tea', 'battery:override:85'])).toBe(85)
+      expect(extractBatteryOverride(['battery:override:150'])).toBe(100) // clamped max 100
+      expect(extractBatteryOverride(['battery:override:5'])).toBe(10) // clamped min 10
+    })
+
+    it('sets and removes battery override tag', () => {
+      const tags = ['need:tea']
+      const updated = setBatteryOverrideTag(tags, 75)
+      expect(updated).toEqual(['need:tea', 'battery:override:75'])
+
+      // Overwrites existing override tag
+      const changed = setBatteryOverrideTag(updated, 30)
+      expect(changed).toEqual(['need:tea', 'battery:override:30'])
+
+      // Removes override when null
+      const reset = setBatteryOverrideTag(changed, null)
+      expect(reset).toEqual(['need:tea'])
+    })
+
+    it('calculateEnergyBattery honors her manual adjustment and sets isManual: true', () => {
+      // In ovulation, baseline is normally Peak (~92%)
+      const autoBattery = calculateEnergyBattery('ovulation', null)
+      expect(autoBattery.percentage).toBeGreaterThanOrEqual(85)
+      expect(autoBattery.isManual).toBeFalsy()
+
+      // When she feels inaccurate and manually adjusts to 20% in the partners tab
+      const entryWithOverride: DayEntry = {
+        date: '2026-03-20',
+        flow: null,
+        mood: null,
+        energy: null,
+        libido: null,
+        cramps: null,
+        headache: null,
+        back_pain: null,
+        breast_tenderness: null,
+        acne: null,
+        bloating: null,
+        fatigue: null,
+        note: null,
+        tags: ['battery:override:20'],
+      }
+
+      const adjustedBattery = calculateEnergyBattery('ovulation', entryWithOverride)
+      expect(adjustedBattery.percentage).toBe(20)
+      expect(adjustedBattery.label).toBe('Very Low')
+      expect(adjustedBattery.isManual).toBe(true)
+      expect(adjustedBattery.summary).toContain('Self-reported')
+    })
+  })
 })
+
 
 

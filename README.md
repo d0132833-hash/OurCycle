@@ -110,6 +110,7 @@ Our Cycle features an adaptive interface specifically optimized across **Mobile*
   - Clinical Doctor Report formatted with clean printable sheets and scroll-protected tables.
   - Dedicated route-tailored loading skeletons across all views (Calendar month grid, Insights chart dashboard, Settings console, and Clinical summary table).
   - Integrated Care & Comfort Shopping Wishlist: she can request treats and comfort supplies directly from Her View or inside the Partner Care Companion checklist, with bi-directional vault sync.
+  - Partner Social Battery Tuning: if the algorithmic social battery estimate feels inaccurate, she can adjust her real-time battery percentage directly in the Partners tab with an interactive slider & 5 quick presets, complete with "Adjusted by Her" badging and reset capability.
 
 ---
 

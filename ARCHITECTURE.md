@@ -129,6 +129,7 @@ OurCycle/
 - **Lightweight Source Control**: Test execution screenshots and local data stores are untracked via `.gitignore`, keeping the repository compact and portable.
 - **Per-Route Streaming & Loading Hierarchy**: Route-tailored `loading.tsx` skeletons for `/calendar` (month grid), `/insights` (analytics charts), `/settings` (settings console), and `/report` (clinical sheet) eliminate visual layout jump and replace generic countdown ring skeletons.
 - **Care Shopping Tag Protocol**: Custom shopping items sync transparently across partners via the shared vault using `shop:<name>` (active) and `shop:done:<name>` (checked off) in `day_entries.tags`.
+- **Social Battery Self-Adjustment Protocol**: If algorithmic estimates feel inaccurate, her real-time social battery can be adjusted directly in the Partners tab and synced via `battery:override:<percentage>` in `day_entries.tags`, with live feedback and 1-tap auto reset.
 
 ---
 

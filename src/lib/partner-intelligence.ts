@@ -15,6 +15,7 @@ export interface BatteryScore {
   badgeColor: string
   barColor: string
   summary: string
+  isManual?: boolean
 }
 
 export interface MindsetGuidance {
@@ -96,12 +97,113 @@ export interface GroceryItem {
 }
 
 /**
+ * Resolves a BatteryScore structure given a numeric score.
+ */
+export function getBatteryScoreForPercentage(
+  score: number,
+  isManual: boolean = false,
+): BatteryScore {
+  const clamped = Math.max(10, Math.min(100, Math.round(score)))
+
+  if (clamped >= 85) {
+    return {
+      percentage: clamped,
+      label: 'Peak',
+      badgeColor: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+      barColor: 'bg-emerald-500',
+      summary: isManual
+        ? 'Self-reported peak vitality: Feeling vibrant, energetic, and excited for connection!'
+        : 'High vitality, magnetic focus, and enthusiastic social battery.',
+      isManual,
+    }
+  }
+  if (clamped >= 70) {
+    return {
+      percentage: clamped,
+      label: 'High',
+      badgeColor: 'bg-teal-500/15 text-teal-700 dark:text-teal-300',
+      barColor: 'bg-teal-500',
+      summary: isManual
+        ? 'Self-reported high battery: Feeling good with steady stamina for activities and plans.'
+        : 'Good steady stamina. Receptive to active plans and collaborative tasks.',
+      isManual,
+    }
+  }
+  if (clamped >= 45) {
+    return {
+      percentage: clamped,
+      label: 'Moderate',
+      badgeColor: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+      barColor: 'bg-amber-500',
+      summary: isManual
+        ? 'Self-reported moderate battery: Prefers relaxed pacing, cozy settings, and low pressure.'
+        : 'Moderate battery. Prefers calm pacing, familiar environments, and low stress.',
+      isManual,
+    }
+  }
+  if (clamped >= 25) {
+    return {
+      percentage: clamped,
+      label: 'Low',
+      badgeColor: 'bg-rose-500/15 text-rose-700 dark:text-rose-300',
+      barColor: 'bg-rose-500',
+      summary: isManual
+        ? 'Self-reported low battery: Reserves running low. Needs tender care, calm space, and zero demands.'
+        : 'Running low on reserves. Cognitive fatigue and physical sensitivity are likely.',
+      isManual,
+    }
+  }
+  return {
+    percentage: clamped,
+    label: 'Very Low',
+    badgeColor: 'bg-rose-600/20 text-rose-800 dark:text-rose-200',
+    barColor: 'bg-rose-600',
+    summary: isManual
+      ? 'Self-reported very low battery: Full recharge required. Gentle silence, warmth, and zero demands.'
+      : 'Rest mode critical. Zero pressure, minimal questions, deep somatic comfort.',
+    isManual,
+  }
+}
+
+/**
+ * Extracts a manual social battery percentage adjustment from day tags if set.
+ * Tag format: 'battery:override:<10..100>'
+ */
+export function extractBatteryOverride(tags?: string[] | null): number | null {
+  if (!tags || !Array.isArray(tags)) return null
+  const tag = tags.find((t) => t.startsWith('battery:override:'))
+  if (!tag) return null
+  const val = parseInt(tag.replace('battery:override:', ''), 10)
+  return isNaN(val) ? null : Math.max(10, Math.min(100, val))
+}
+
+/**
+ * Sets or removes a manual social battery override tag.
+ */
+export function setBatteryOverrideTag(
+  currentTags: string[] | null | undefined,
+  percentage: number | null,
+): string[] {
+  const filtered = (currentTags ?? []).filter((t) => !t.startsWith('battery:override:'))
+  if (percentage === null) return filtered
+  const clamped = Math.max(10, Math.min(100, Math.round(percentage)))
+  return [...filtered, `battery:override:${clamped}`]
+}
+
+/**
  * Calculates her estimated daily energy/social battery based on phase and logged day data.
+ * If manually adjusted by her, honors the self-reported percentage.
  */
 export function calculateEnergyBattery(
   phase: Phase | null,
   entry: DayEntry | null,
 ): BatteryScore {
+  // Check for manual override set by her in the partners tab
+  const override = extractBatteryOverride(entry?.tags)
+  if (override !== null) {
+    return getBatteryScoreForPercentage(override, true)
+  }
+
   // Baseline energy by cycle phase
   let base: number
   switch (phase) {
@@ -148,51 +250,7 @@ export function calculateEnergyBattery(
     }
   }
 
-  const score = Math.max(10, Math.min(100, Math.round(base)))
-
-  if (score >= 85) {
-    return {
-      percentage: score,
-      label: 'Peak',
-      badgeColor: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
-      barColor: 'bg-emerald-500',
-      summary: 'High vitality, magnetic focus, and enthusiastic social battery.',
-    }
-  }
-  if (score >= 70) {
-    return {
-      percentage: score,
-      label: 'High',
-      badgeColor: 'bg-teal-500/15 text-teal-700 dark:text-teal-300',
-      barColor: 'bg-teal-500',
-      summary: 'Good steady stamina. Receptive to active plans and collaborative tasks.',
-    }
-  }
-  if (score >= 45) {
-    return {
-      percentage: score,
-      label: 'Moderate',
-      badgeColor: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
-      barColor: 'bg-amber-500',
-      summary: 'Moderate battery. Prefers calm pacing, familiar environments, and low stress.',
-    }
-  }
-  if (score >= 25) {
-    return {
-      percentage: score,
-      label: 'Low',
-      badgeColor: 'bg-rose-500/15 text-rose-700 dark:text-rose-300',
-      barColor: 'bg-rose-500',
-      summary: 'Running low on reserves. Cognitive fatigue and physical sensitivity are likely.',
-    }
-  }
-  return {
-    percentage: score,
-    label: 'Very Low',
-    badgeColor: 'bg-rose-600/20 text-rose-800 dark:text-rose-200',
-    barColor: 'bg-rose-600',
-    summary: 'Rest mode critical. Zero pressure, minimal questions, deep somatic comfort.',
-  }
+  return getBatteryScoreForPercentage(base, false)
 }
 
 /**

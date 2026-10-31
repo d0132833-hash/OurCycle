@@ -6,7 +6,7 @@ All notable changes and architectural features introduced to the Our Cycle codeb
 
 ## [0.6.0] — 2026-10-31
 
-### 🛒 Custom Shopping Checklist by Her & 🎨 Route-Tailored Loading Skeletons
+### 🛒 Custom Shopping Checklist by Her, 🔋 Partner Social Battery Adjustment & 🎨 Route-Tailored Loading Skeletons
 
 #### 1. Custom Items in Care & Comfort Shopping Checklist
 - **Direct Addition in Her View (`partner-signal-shelf.tsx`)**:
@@ -22,9 +22,17 @@ All notable changes and architectural features introduced to the Our Cycle codeb
   - Enhanced `handleCopyGroceryList`: Clipboard export cleanly groups `🌟 Special Requests from Her:` at the top followed by `🛒 Curated Comfort Essentials:`.
 - **Pure Intelligence Helpers (`partner-intelligence.ts`)**:
   - Added pure helpers: `parseCustomShoppingItems`, `addCustomShoppingTag`, `toggleCustomShoppingTag`, and `removeCustomShoppingTag`.
-  - Added 5 comprehensive Vitest unit tests verifying parsing, duplicate prevention, active/done toggling, and tag removal (85/85 tests passing).
+  - Added 5 comprehensive Vitest unit tests verifying parsing, duplicate prevention, active/done toggling, and tag removal.
 
-#### 2. Unique Route-Tailored Loading Skeletons for Every Tab
+#### 2. Social Battery Manual Adjustment in Partners Tab Only (`partner-view.tsx`)
+- **Self-Reported Adjustment by Her**: If the automated algorithmic estimate feels inaccurate on any given day, she can adjust her real-time social battery directly inside the Partners tab.
+- **Granular Slider & 1-Tap Presets**: Features an interactive range slider (10%–100%) and 5 instant quick presets (`Very Low (15%)`, `Low (30%)`, `Moderate (55%)`, `High (75%)`, `Peak (95%)`).
+- **Visual Feedback & Badging**: When adjusted, the battery displays a distinct `"Adjusted by Her 💕"` badge and tailored summary copy so her partner immediately knows her actual state.
+- **Seamless Reset Option**: Includes a 1-tap `"Reset auto"` button to revert back to the automated biological estimate at any time.
+- **Vault Persistence**: Serialized through the `battery:override:<percentage>` tag in `day_entries.tags`, keeping both partner devices aligned in real time.
+- **Unit Tested**: Added 3 new unit tests covering override extraction, tag manipulation, and manual adjustment resolution in `tests/partner-intelligence.test.ts` (88/88 tests passing).
+
+#### 3. Unique Route-Tailored Loading Skeletons for Every Tab
 - **Calendar Skeleton (`src/app/(app)/calendar/loading.tsx`)**:
   - Replaced the countdown ring placeholder with an authentic month calendar skeleton: month navigation bar, 7-column weekday headers, 35 day cells with cycle-like rose/peach tints, and legend badge skeletons.
 - **Insights Skeleton (`src/app/(app)/insights/loading.tsx`)**:
@@ -205,4 +213,3 @@ All notable changes and architectural features introduced to the Our Cycle codeb
 - Argon2id passphrase hashing and HMAC-SHA256 session management with sliding refresh.
 - Dual storage architecture supporting local file store and Supabase Postgres.
 - Offline-first mutation queue with automatic reconnect synchronization.
-
