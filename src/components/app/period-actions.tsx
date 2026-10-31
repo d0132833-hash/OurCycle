@@ -14,10 +14,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { saveWithOfflineFallback } from '@/lib/client/offline-queue'
+import { dequeueWhere, saveWithOfflineFallback } from '@/lib/client/offline-queue'
 import { DaySheet } from './day-sheet'
 import { addDays } from '@/lib/dates'
-import type { DayEntry } from '@/lib/types'
+import type { DayEntry, PeriodEpisode } from '@/lib/types'
 
 function triggerHaptic() {
   if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
@@ -38,11 +38,13 @@ export function PeriodActions({
   today,
   todayEntry,
   ongoingEpisodeId,
+  ongoingEpisode = null,
   periodLength = 5,
 }: {
   today: string
   todayEntry: DayEntry | null
   ongoingEpisodeId: string | null
+  ongoingEpisode?: PeriodEpisode | null
   periodLength?: number
 }) {
   const router = useRouter()
@@ -120,6 +122,9 @@ export function PeriodActions({
             label: 'Undo',
             onClick: async () => {
               try {
+                dequeueWhere(
+                  (op) => op.kind === 'period-start' && op.payload.start_date === today,
+                )
                 // Find period with start_date === today and delete
                 const res = await fetch('/api/periods')
                 if (res.ok) {
@@ -172,12 +177,21 @@ export function PeriodActions({
           label: 'Undo',
           onClick: async () => {
             try {
+              const pRes = await fetch('/api/periods')
+              let restoredEnd = addDays(today, currentLen - 1)
+              if (pRes.ok) {
+                const pData = await pRes.json()
+                const ep = (pData.periods as any[])?.find((p) => p.id === targetEpisodeId)
+                if (ep) {
+                  restoredEnd = addDays(ep.start_date, currentLen - 1)
+                }
+              }
               await fetch('/api/periods', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: targetEpisodeId, end_date: null }),
+                body: JSON.stringify({ id: targetEpisodeId, end_date: restoredEnd }),
               })
-              toast.info('Period end date cleared')
+              toast.info('Period early end undone — full cycle restored')
               router.refresh()
             } catch {
               toast.error('Could not undo')
@@ -398,6 +412,7 @@ export function PeriodActions({
       <DaySheet
         date={today}
         entry={todayEntry}
+        existingEpisode={ongoingEpisode}
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         periodLength={currentLen}

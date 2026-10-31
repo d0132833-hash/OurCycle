@@ -171,6 +171,7 @@ export function TodayView({ prediction, todayEntry, ongoing, periodLength }: Tod
                 today={prediction.today}
                 todayEntry={todayEntry}
                 ongoingEpisodeId={ongoing?.id ?? null}
+                ongoingEpisode={ongoing}
                 periodLength={periodLength ?? prediction.predictedPeriodDuration ?? 5}
               />
 

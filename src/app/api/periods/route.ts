@@ -12,7 +12,7 @@ import {
   tooMany,
 } from '@/lib/api-helpers'
 import { syncPredictionLog } from '@/lib/recompute'
-import { addDays, dayRange, todayInTz } from '@/lib/dates'
+import { addDays, dayRange, diffDays, todayInTz } from '@/lib/dates'
 import type { DayEntry, PeriodEpisode } from '@/lib/types'
 import { z } from 'zod'
 
@@ -128,15 +128,42 @@ export async function PATCH(req: NextRequest) {
   const parsed = patchSchema.safeParse(await readJson(req))
   if (!parsed.success) return badRequest(parsed.error.issues[0]?.message ?? 'Invalid input')
   const { id, ...patch } = parsed.data
-  if (patch.start_date && patch.end_date && patch.end_date < patch.start_date)
-    return badRequest('End date cannot be before the start date')
 
   const store = getStore()
   const existingPeriod = (await store.listPeriods()).find((p) => p.id === id)
+  if (!existingPeriod) return NextResponse.json({ error: 'Period not found' }, { status: 404 })
 
-  const updateData: Partial<Pick<PeriodEpisode, 'start_date' | 'end_date' | 'flow'>> = {}
-  if (patch.start_date !== undefined) updateData.start_date = patch.start_date
-  if (patch.end_date !== undefined) updateData.end_date = patch.end_date
+  const settings = await store.getSettings()
+  const today = todayInTz(settings.timezone)
+
+  const effectiveStart = patch.start_date ?? existingPeriod.start_date
+  if (effectiveStart > today) return badRequest('Start date cannot be in the future')
+
+  const periodLength = settings.period_length ?? 5
+  let effectiveEnd: string
+  if (patch.end_date !== undefined) {
+    if (patch.end_date === null) {
+      effectiveEnd = addDays(effectiveStart, periodLength - 1)
+    } else {
+      effectiveEnd = patch.end_date
+    }
+  } else {
+    if (patch.start_date && existingPeriod.end_date) {
+      const oldLen = diffDays(existingPeriod.end_date, existingPeriod.start_date)
+      effectiveEnd = addDays(patch.start_date, Math.max(0, oldLen))
+    } else {
+      effectiveEnd = existingPeriod.end_date ?? addDays(effectiveStart, periodLength - 1)
+    }
+  }
+
+  if (effectiveEnd < effectiveStart) {
+    return badRequest('End date cannot be before the start date')
+  }
+
+  const updateData: Partial<Pick<PeriodEpisode, 'start_date' | 'end_date' | 'flow'>> = {
+    start_date: effectiveStart,
+    end_date: effectiveEnd,
+  }
   if (patch.flow !== undefined)
     updateData.flow = (patch.flow ?? undefined) as PeriodEpisode['flow'] | undefined
 

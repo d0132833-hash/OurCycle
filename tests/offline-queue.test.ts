@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { enqueue, flushQueue, queueSize } from '@/lib/client/offline-queue'
+import { dequeueWhere, enqueue, flushQueue, queueSize } from '@/lib/client/offline-queue'
 
 describe('offline queue', () => {
   let storage: Record<string, string> = {}
@@ -66,5 +66,14 @@ describe('offline queue', () => {
     const synced = await flushQueue()
     expect(synced).toBe(0)
     expect(queueSize()).toBe(2)
+  })
+
+  it('removes matching operations when dequeueWhere is called (undo scenario)', () => {
+    enqueue('period-start', { start_date: '2026-03-16' })
+    enqueue('day', { date: '2026-03-16', note: 'test' })
+    expect(queueSize()).toBe(2)
+
+    dequeueWhere((op) => op.kind === 'period-start' && op.payload.start_date === '2026-03-16')
+    expect(queueSize()).toBe(1)
   })
 })

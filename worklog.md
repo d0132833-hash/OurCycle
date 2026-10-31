@@ -341,3 +341,23 @@ Work Log:
   - Vitest test suite (`npm test`): 103/103 tests passing across 6 test files.
   - Next.js production build (`npm run build`): compiled cleanly with 0 TypeScript/lint errors.
 - Pushed changes to GitHub remote (`origin main`).
+
+---
+Task ID: 6
+Agent: Antigravity
+Task: Comprehensive codebase bug audit following period logging and settings errors; report and fix all latent domain and synchronization bugs.
+
+Work Log:
+- Performed exhaustive audit of period lifecycle, day entries, calendar grid rendering, settings updates, offline queue, and prediction engine.
+- Identified and fixed 11 latent bugs across 9 core files:
+  1. Intermediate day editing isolation: passing existingEpisode to DaySheet and guarding shouldStartPeriod in /api/days to prevent duplicate overlapping periods and cycle length corruption.
+  2. Period PATCH validation: symmetric date verification preventing inverted start/end dates and future start dates.
+  3. Prediction active episode resolution: reverse-order lookup preventing lock into "Day 180+ of period" when historical episodes have open ends.
+  4. Offline queue dequeue: added dequeueWhere to cancel pending offline writes on quick Undo.
+  5. Period early-end Undo: restores full period length instead of nulling end date.
+  6. Calendar grid past predictions: prevented past overdue dates from rendering dashed pink prediction rings.
+  7. Settings PATCH recompute: calls syncPredictionLog on all settings mutations.
+  8. Export fidelity: included period_length in JSON backup export.
+  9. Settings period management: added upsert=true and auto-end-date calculation on blank input.
+- Added 6 rigorous automated tests in tests/comprehensive-features.test.ts and tests/offline-queue.test.ts; all 109 tests passing.
+- Validated with Next.js 16 production build.

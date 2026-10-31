@@ -29,6 +29,14 @@ export function queueSize(): number {
   return readQueue().length
 }
 
+export function dequeueWhere(predicate: (op: QueuedOp) => boolean): void {
+  const q = readQueue()
+  const filtered = q.filter((op) => !predicate(op))
+  if (filtered.length !== q.length) {
+    writeQueue(filtered)
+  }
+}
+
 export function enqueue(kind: QueuedOp['kind'], payload: Record<string, unknown>) {
   const q = readQueue()
   q.push({ id: crypto.randomUUID(), kind, payload, ts: Date.now() })

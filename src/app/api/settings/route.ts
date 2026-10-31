@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getStore } from '@/lib/db'
 import { getSession, unauthorizedResponse } from '@/lib/api-auth'
 import { badRequest, isSameOrigin, isValidTimezone, readJson } from '@/lib/api-helpers'
+import { syncPredictionLog } from '@/lib/recompute'
 import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
@@ -25,5 +26,6 @@ export async function PATCH(req: NextRequest) {
   const parsed = patchSchema.safeParse(await readJson(req))
   if (!parsed.success) return badRequest(parsed.error.issues[0]?.message ?? 'Invalid input')
   const settings = await getStore().updateSettings(parsed.data)
+  await syncPredictionLog()
   return NextResponse.json({ settings })
 }

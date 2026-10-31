@@ -78,25 +78,29 @@ async function handlePeriodSyncForDay(
   const isMenstrual =
     input.flow === 'light' || input.flow === 'medium' || input.flow === 'heavy'
 
-  if (input.is_period_start || (input.is_period_start !== false && isMenstrual)) {
+  // Check if a period starts on input.date or already contains input.date
+  const periods = await store.listPeriods()
+  const existing = periods.find((p) => p.start_date === input.date)
+  const containing = periods.find(
+    (p) => p.start_date <= input.date && (p.end_date === null || p.end_date >= input.date),
+  )
+
+  const shouldStartPeriod =
+    input.is_period_start === true ||
+    (input.is_period_start === undefined && isMenstrual && (!containing || existing !== undefined))
+
+  if (shouldStartPeriod && isMenstrual) {
     const settings = await store.getSettings()
     const periodLen = input.period_length ?? settings.period_length ?? 5
     const episodeFlow = (input.flow as 'light' | 'medium' | 'heavy') || 'medium'
     const endDate = addDays(input.date, periodLen - 1)
-
-    // Check if a period starts on input.date or already contains input.date
-    const periods = await store.listPeriods()
-    const existing = periods.find((p) => p.start_date === input.date)
-    const containing = periods.find(
-      (p) => p.start_date <= input.date && (p.end_date === null || p.end_date >= input.date),
-    )
 
     if (existing) {
       await store.updatePeriod(existing.id, {
         end_date: endDate,
         flow: episodeFlow,
       })
-    } else if (!containing || input.is_period_start) {
+    } else {
       await store.insertPeriod({
         start_date: input.date,
         end_date: endDate,

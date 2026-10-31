@@ -229,9 +229,12 @@ export function computePredictions(
   const anchorStart = sorted.length ? sorted[sorted.length - 1].start_date : null
 
   // ---- bleeding state ------------------------------------------------------
-  const activeEpisode = sorted.find(
-    (e) => e.start_date <= today && (e.end_date == null || today <= e.end_date),
-  )
+  const defaultDuration = opts.periodLength ?? 5
+  // Search newest first so recent episodes take priority, and cap open-ended episodes
+  const activeEpisode = [...sorted].reverse().find((e) => {
+    const end = e.end_date ?? addDays(e.start_date, defaultDuration - 1)
+    return e.start_date <= today && today <= end
+  })
   const bleedingToday = activeEpisode !== undefined
   const periodDay = activeEpisode ? diffDays(today, activeEpisode.start_date) + 1 : null
 
@@ -441,9 +444,10 @@ export function buildPhaseMap(
   const sorted = [...episodes].sort((a, b) => a.start_date.localeCompare(b.start_date))
   const map: Record<string, Phase> = {}
 
-  // bleeding days come straight from episodes (end null → treat as ongoing to today)
+  // bleeding days come straight from episodes (end null → cap to predicted period duration)
+  const defaultBleedDur = prediction.predictedPeriodDuration || 5
   for (const e of sorted) {
-    const end = e.end_date ?? (e.start_date <= prediction.today ? prediction.today : e.start_date)
+    const end = e.end_date ?? addDays(e.start_date, defaultBleedDur - 1)
     for (let d = e.start_date; d <= end; d = addDays(d, 1)) {
       if (d >= from && d <= to) map[d] = 'menstrual'
     }

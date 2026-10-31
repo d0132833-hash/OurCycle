@@ -147,8 +147,8 @@ export function CalendarGrid({
     const flow = entryByDate.get(d)?.flow
     if (flow === 'light' || flow === 'medium' || flow === 'heavy') return 'period'
     if (flow === 'spotting') return 'spotting'
-    if (marks.predicted.has(d)) return 'predicted'
-    if (marks.fertile.has(d)) return 'fertile'
+    if (marks.predicted.has(d) && d >= today) return 'predicted'
+    if (marks.fertile.has(d) && d >= today) return 'fertile'
     return 'plain'
   }
 
@@ -485,6 +485,7 @@ export function CalendarGrid({
       <DaySheet
         date={selected}
         entry={selectedEntry}
+        existingEpisode={selected ? (episodeDay.get(selected) ?? null) : null}
         open={open}
         onOpenChange={setOpen}
         periodLength={periodLength}

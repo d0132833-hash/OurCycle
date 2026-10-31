@@ -4,6 +4,51 @@ All notable changes and architectural features introduced to the Our Cycle codeb
 
 ---
 
+## [0.7.2] — 2026-10-31
+
+### 🔍 Comprehensive Codebase Bug Audit & Full Synchronization Hardening
+
+#### 1. Period & Day Entry Synchronization
+- **Intermediate Day Logging Isolation (`src/app/api/days/route.ts`, `src/components/app/day-sheet.tsx`, `src/components/app/calendar-grid.tsx`)**:
+  - Fixed bug where saving symptom notes or flow on an intermediate day (Day 2, 3, 4 of a 5-day period) auto-set `is_period_start = true`, creating duplicate overlapping period episodes and corrupting consecutive-start cycle calculations in `predictions.ts`.
+  - Added `existingEpisode` prop to `DaySheet` to recognize whether a date is Day 1 or Day N of an existing period.
+  - Intermediate days now display `Day N of Period (started MMM DD)` with `isPeriodStart = false` by default.
+  - In `src/app/api/days/route.ts`, `shouldStartPeriod` prevents inserting a new period when updating days inside an existing episode unless explicitly forced.
+
+#### 2. Period Episode Invalidation & Validation Asymmetry
+- **Period PATCH Date Validation (`src/app/api/periods/route.ts`)**:
+  - Replaced partial check with full symmetric validation: `effectiveEnd < effectiveStart` using `patch.end_date ?? existingPeriod.end_date` and `patch.start_date ?? existingPeriod.start_date`.
+  - Enforced `effectiveStart <= today` on `PATCH /api/periods` to eliminate future period episodes.
+  - When `patch.end_date === null` is passed on PATCH, auto-calculate `effectiveEnd = addDays(effectiveStart, periodLength - 1)` instead of collapsing `newEnd` to `start_date` and wiping out subsequent days.
+
+#### 3. Prediction Engine Active Episode Lookup
+- **Reverse Chronological Episode Resolution (`src/lib/predictions.ts`)**:
+  - Fixed `computePredictions` which searched `sorted.find()` (oldest first). If any old historical episode had `end_date: null`, the app locked indefinitely into "Day 180+ of your period".
+  - Searches newest first with `[...sorted].reverse().find()` and caps open-ended episodes to `periodLength` duration.
+  - In `buildPhaseMap`, capped open-ended episodes to `predictedPeriodDuration` to prevent 6 months of calendar dates turning red.
+
+#### 4. Undo and Offline Queue Cancellation
+- **Offline Queue Dequeue Support (`src/lib/client/offline-queue.ts`, `src/components/app/period-actions.tsx`)**:
+  - Exported `dequeueWhere` in `offline-queue.ts`.
+  - When tapping "Undo" on "Period started today", pending offline operations are removed from `localStorage` immediately, preventing re-execution upon reconnection.
+  - When undoing "Period ended today", restores the period's expected end date (`addDays(start_date, currentLen - 1)`) rather than sending `end_date: null`.
+
+#### 5. Calendar Rendering & Stale Predictions
+- **Calendar Grid Active Prediction Boundaries (`src/components/app/calendar-grid.tsx`)**:
+  - Prevented past overdue dates from rendering with pink dashed prediction rings (`cell-predicted`) by enforcing `d >= today`.
+  - Passed `existingEpisode` to `DaySheet` so clicking intermediate days shows contextual period day number.
+
+#### 6. Settings & Data Export Fidelity
+- **Settings Recompute Sync (`src/app/api/settings/route.ts`)**:
+  - `PATCH /api/settings` now calls `await syncPredictionLog()` to immediately update `prediction_logs` when cycle override, timezone, or period length changes.
+- **Export Schema Completeness (`src/app/api/export/route.ts`)**:
+  - Included `period_length: settings.period_length ?? 5` in JSON backup export.
+- **Settings Period Management (`src/components/app/settings-view.tsx`)**:
+  - Passed `upsert: true` on Add Period to eliminate `409 Conflict` errors on existing start dates.
+  - Auto-calculates `end_date` from `periodLen` on Edit Period when left blank.
+
+---
+
 ## [0.7.0] — 2026-10-31
 
 ### 🛡️ Comprehensive Security Audit & Defense-in-Depth Hardening

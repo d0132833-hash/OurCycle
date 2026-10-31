@@ -5,6 +5,7 @@ import { GET as periodsGet, POST as periodsPost, PATCH as periodsPatch, DELETE a
 import { GET as daysGet, POST as daysPost, PATCH as daysPatch, DELETE as daysDelete } from '@/app/api/days/route'
 import { GET as predictionsGet } from '@/app/api/predictions/route'
 import { GET as settingsGet, PATCH as settingsPatch } from '@/app/api/settings/route'
+import { GET as exportGet } from '@/app/api/export/route'
 import { POST as setupPost } from '@/app/api/auth/setup/route'
 import { POST as loginPost } from '@/app/api/auth/login/route'
 import { POST as rotatePost } from '@/app/api/auth/rotate/route'
@@ -749,6 +750,122 @@ describe('Rigorous Feature & API Test Suite', () => {
       // Following days (08-02, 08-03) should be cleaned up
       const following = await store.listDays('2026-08-02', '2026-08-03')
       expect(following.length).toBe(0)
+    })
+
+    it('does not create duplicate/overlapping period episodes when editing intermediate days', async () => {
+      // 1. Start period on 2026-09-01 (length 5: 09-01 to 09-05)
+      await store.updateSettings({ period_length: 5 })
+      const pReq = new NextRequest('http://localhost:3000/api/periods', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' },
+        body: JSON.stringify({ start_date: '2026-09-01', flow: 'medium' }),
+      })
+      await periodsPost(pReq)
+      expect((await store.listPeriods()).length).toBe(1)
+
+      // 2. User logs symptoms or changes flow on Day 2 (2026-09-02) without is_period_start: true
+      const day2Req = new NextRequest('http://localhost:3000/api/days', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' },
+        body: JSON.stringify({
+          date: '2026-09-02',
+          flow: 'heavy',
+          cramps: 2,
+          note: 'Moderate cramps',
+        }),
+      })
+      const day2Res = await daysPost(day2Req)
+      expect(day2Res.status).toBe(201)
+
+      // CRITICAL: There must STILL be exactly 1 period episode (starting on 2026-09-01)
+      const periods = await store.listPeriods()
+      expect(periods.length).toBe(1)
+      expect(periods[0].start_date).toBe('2026-09-01')
+      expect(periods[0].end_date).toBe('2026-09-05')
+
+      // Day 2 was updated properly
+      const day2 = (await store.listDays('2026-09-02', '2026-09-02'))[0]
+      expect(day2.flow).toBe('heavy')
+      expect(day2.cramps).toBe(2)
+      expect(day2.note).toBe('Moderate cramps')
+    })
+
+    it('validates PATCH /api/periods to prevent inverted dates and handles null end_date safely', async () => {
+      // Create period on 2026-05-10
+      const ep = await store.insertPeriod({
+        start_date: '2026-05-10',
+        end_date: '2026-05-14',
+        flow: 'medium',
+      })
+
+      // Try to PATCH only end_date before the existing start_date
+      const badReq = new NextRequest('http://localhost:3000/api/periods', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' },
+        body: JSON.stringify({
+          id: ep.id,
+          end_date: '2026-05-08',
+        }),
+      })
+      const badRes = await periodsPatch(badReq)
+      expect(badRes.status).toBe(400)
+      const badData = await badRes.json()
+      expect(badData.error).toContain('End date cannot be before the start date')
+
+      // PATCH with end_date: null should auto-fill with period_length (not collapse to start_date)
+      await store.updateSettings({ period_length: 5 })
+      const nullEndReq = new NextRequest('http://localhost:3000/api/periods', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' },
+        body: JSON.stringify({
+          id: ep.id,
+          end_date: null,
+        }),
+      })
+      const nullEndRes = await periodsPatch(nullEndReq)
+      expect(nullEndRes.status).toBe(200)
+      const updated = (await store.listPeriods()).find((p) => p.id === ep.id)
+      expect(updated?.end_date).toBe('2026-05-14') // 5 days from 05-10
+    })
+
+    it('exports period_length in GET /api/export settings', async () => {
+      await store.updateSettings({ period_length: 6, timezone: 'Asia/Calcutta' })
+      const expReq = new NextRequest('http://localhost:3000/api/export')
+      const expRes = await exportGet(expReq)
+      expect(expRes.status).toBe(200)
+      const data = await expRes.json()
+      expect(data.settings.period_length).toBe(6)
+      expect(data.settings.timezone).toBe('Asia/Calcutta')
+    })
+
+    it('recomputes prediction logs on PATCH /api/settings', async () => {
+      // Add period so predictions exist
+      await store.insertPeriod({ start_date: '2026-04-01', end_date: '2026-04-05', flow: 'medium' })
+
+      const setReq = new NextRequest('http://localhost:3000/api/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' },
+        body: JSON.stringify({ cycle_length_override: 30 }),
+      })
+      const setRes = await settingsPatch(setReq)
+      expect(setRes.status).toBe(200)
+
+      // Prediction row should reflect 30-day override
+      const preds = await store.listPredictions()
+      expect(preds.length).toBeGreaterThan(0)
+      const latest = preds[0]
+      expect(latest.predicted_start).toBe('2026-05-01') // April 1 + 30 days
+    })
+
+    it('computePredictions correctly handles open-ended historical episodes with reverse lookup', () => {
+      const episodes = [
+        { start_date: '2026-01-01', end_date: null }, // Old open-ended episode
+        { start_date: '2026-06-01', end_date: '2026-06-05' },
+      ]
+      const pred = computePredictions(episodes, { today: '2026-06-03', periodLength: 5 })
+      // Active episode on 2026-06-03 must be the June episode (Day 3), NOT Day 154 from January!
+      expect(pred.bleedingToday).toBe(true)
+      expect(pred.periodDay).toBe(3)
     })
   })
 })

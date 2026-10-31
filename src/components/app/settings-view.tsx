@@ -166,6 +166,7 @@ export function SettingsView({
           start_date: addStartDate,
           end_date: addEndDate || null,
           flow: addFlow || 'medium',
+          upsert: true,
         }),
       })
       if (!res.ok) {
@@ -261,6 +262,7 @@ export function SettingsView({
       return
     }
     setSavingEdit(true)
+    const effectiveEditEnd = editEndDate || addDays(editStartDate, periodLen - 1)
     try {
       const res = await fetch('/api/periods', {
         method: 'PATCH',
@@ -268,7 +270,7 @@ export function SettingsView({
         body: JSON.stringify({
           id: editingPeriod.id,
           start_date: editStartDate,
-          end_date: editEndDate || null,
+          end_date: effectiveEditEnd,
           flow: editFlow || null,
         }),
       })

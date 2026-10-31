@@ -72,6 +72,7 @@ export async function GET(req: NextRequest) {
       timezone: settings.timezone,
       cycle_length_override: settings.cycle_length_override,
       bootstrap_cycle_length: settings.bootstrap_cycle_length,
+      period_length: settings.period_length ?? 5,
     },
     periods,
     days,

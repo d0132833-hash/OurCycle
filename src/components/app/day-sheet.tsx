@@ -19,9 +19,10 @@ import {
   SYMPTOM_KEYS,
   SYMPTOM_LABELS,
   type DayEntry,
+  type PeriodEpisode,
 } from '@/lib/types'
 import { saveWithOfflineFallback } from '@/lib/client/offline-queue'
-import { addDays } from '@/lib/dates'
+import { addDays, diffDays } from '@/lib/dates'
 import { fmtShort } from './phase-copy'
 
 const FLOW_LABEL: Record<string, string> = {
@@ -120,6 +121,7 @@ function fromEntry(e: DayEntry | null): DayDraft {
 interface Props {
   date: string | null
   entry: DayEntry | null
+  existingEpisode?: PeriodEpisode | null
   open: boolean
   onOpenChange: (open: boolean) => void
   periodLength?: number
@@ -136,6 +138,7 @@ interface Props {
 export function DaySheet({
   date,
   entry,
+  existingEpisode,
   open,
   onOpenChange,
   periodLength = 5,
@@ -154,9 +157,13 @@ export function DaySheet({
       setPeriodLen(periodLength)
       const hasBleeding =
         entry?.flow === 'light' || entry?.flow === 'medium' || entry?.flow === 'heavy'
-      setIsPeriodStart(hasBleeding)
+      if (existingEpisode && date) {
+        setIsPeriodStart(existingEpisode.start_date === date)
+      } else {
+        setIsPeriodStart(hasBleeding)
+      }
     }
-  }, [open, entry, periodLength])
+  }, [open, entry, existingEpisode, date, periodLength])
 
   const set = <K extends keyof DayDraft>(k: K, v: DayDraft[K]) => {
     triggerHaptic()
@@ -171,7 +178,11 @@ export function DaySheet({
     } else {
       set('flow', f)
       if (f === 'light' || f === 'medium' || f === 'heavy') {
-        setIsPeriodStart(true)
+        if (existingEpisode && date && existingEpisode.start_date < date) {
+          setIsPeriodStart(false)
+        } else {
+          setIsPeriodStart(true)
+        }
       } else {
         setIsPeriodStart(false)
       }
@@ -414,10 +425,14 @@ export function DaySheet({
                     <Droplets className="h-4 w-4 text-primary fill-primary/30" />
                     <div>
                       <span className="text-sm font-semibold text-foreground block">
-                        Period start date
+                        {existingEpisode && date && existingEpisode.start_date < date
+                          ? `Day ${diffDays(date, existingEpisode.start_date) + 1} of Period`
+                          : 'Period start date'}
                       </span>
                       <span className="text-[11px] text-muted-foreground">
-                        Auto-logs following days
+                        {existingEpisode && date && existingEpisode.start_date < date
+                          ? `Started ${fmtShort(existingEpisode.start_date)} · Toggle to split cycle`
+                          : 'Auto-logs following days'}
                       </span>
                     </div>
                   </div>
