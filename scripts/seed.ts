@@ -14,6 +14,7 @@
  */
 
 import { getStore } from '../src/lib/db'
+import { hashPassphrase } from '../src/lib/crypto'
 import { addDays, diffDays, todayInTz } from '../src/lib/dates'
 import { syncPredictionLog } from '../src/lib/recompute'
 import type { SymptomKey } from '../src/lib/types'
@@ -35,6 +36,11 @@ const between = (a: number, b: number) => a + Math.floor(rnd() * (b - a + 1))
 async function main() {
   const store = getStore()
   console.log(`seeding into: ${store.kind === 'local' ? 'local dev store' : 'Supabase project'}`)
+
+  if (!(await store.getSecret())) {
+    await store.createSecret(hashPassphrase('2007'))
+    console.log('initialized vault secret with default numerical PIN')
+  }
 
   const existing = await store.listPeriods()
   if (existing.length > 0) {

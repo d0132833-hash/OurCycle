@@ -17,7 +17,10 @@ export const dynamic = 'force-dynamic'
 
 const bodySchema = z.object({
   current: z.string().min(1),
-  next: z.string().min(10, 'Use at least 10 characters'),
+  next: z
+    .string()
+    .min(4, 'Use at least 4 numerical digits')
+    .regex(/^\d+$/, 'PIN must contain numbers only'),
 })
 
 /** Vault rotation: re-hash + bump session epoch → every old cookie dies. */
@@ -43,7 +46,7 @@ export async function POST(req: NextRequest) {
 
   if (!verifyPassphrase(parsed.data.current, secret.passphrase_hash)) {
     await recordLoginFailure()
-    return NextResponse.json({ error: 'Incorrect vault code' }, { status: 401 })
+    return NextResponse.json({ error: 'Incorrect vault PIN' }, { status: 401 })
   }
 
   await recordLoginSuccess()

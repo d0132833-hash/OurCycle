@@ -19,21 +19,21 @@ All application routes are served by Next.js Server Route Handlers located under
 ### 1. Authentication
 
 #### `POST /api/auth/setup`
-Initializes the vault with an Argon2id-hashed passphrase on first run.
-- **Request Body**: `{ "code": "string (min 10 chars)" }`
+Initializes the vault with an Argon2id-hashed numerical PIN on first run.
+- **Request Body**: `{ "code": "string (numerical digits only, min 4 digits)" }`
 - **Response**: `{ "ok": true }` + `Set-Cookie: oc_session`
 - **Errors**: `400 Bad Request`, `409 Conflict` (if vault already created)
 
 #### `POST /api/auth/login`
-Unlocks the vault with the shared passphrase.
-- **Request Body**: `{ "code": "string" }`
+Unlocks the vault with the numerical PIN.
+- **Request Body**: `{ "code": "string (numerical digits)" }`
 - **Rate Limit**: 5 failed attempts locks the vault for 10 minutes (returns `429 Too Many Requests`).
 - **Response**: `{ "ok": true }` + `Set-Cookie: oc_session`
 - **Errors**: `401 Unauthorized`
 
 #### `POST /api/auth/rotate`
-Rotates the vault passphrase and increments `session_epoch`. Invalidate all previously issued sessions across all devices.
-- **Request Body**: `{ "current": "string", "next": "string (min 10 chars)" }`
+Rotates the vault PIN and increments `session_epoch`. Invalidate all previously issued sessions across all devices.
+- **Request Body**: `{ "current": "string", "next": "string (numerical digits only, min 4 digits)" }`
 - **Response**: `{ "ok": true }` + fresh `Set-Cookie: oc_session`
 
 #### `POST /api/auth/logout`

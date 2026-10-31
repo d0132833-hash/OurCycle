@@ -357,15 +357,25 @@ describe('Rigorous Feature & API Test Suite', () => {
   })
 
   // --------------------------------------------------------------------------
-  // Authentication Lifecycle & Passphrase Security
+  // --------------------------------------------------------------------------
+  // Authentication Lifecycle & Numerical Vault PIN Security
   // --------------------------------------------------------------------------
   describe('Authentication Lifecycle & Vault Operations', () => {
-    it('creates vault with setup, unlocks via login, and logs out', async () => {
-      // 1. Setup
+    it('creates vault with setup, unlocks via login, rejects non-numerical PINs, and logs out', async () => {
+      // Reject non-numerical or too-short PIN on setup
+      const nonNumericReq = new NextRequest('http://localhost:3000/api/auth/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' },
+        body: JSON.stringify({ code: 'abc' }),
+      })
+      const nonNumericRes = await setupPost(nonNumericReq)
+      expect(nonNumericRes.status).toBe(400)
+
+      // 1. Setup with valid numerical PIN
       const setupReq = new NextRequest('http://localhost:3000/api/auth/setup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' },
-        body: JSON.stringify({ code: 'my-super-secret-vault-code-2026' }),
+        body: JSON.stringify({ code: '5821' }),
       })
       const setupRes = await setupPost(setupReq)
       expect(setupRes.status).toBe(200)
@@ -376,21 +386,21 @@ describe('Rigorous Feature & API Test Suite', () => {
       expect(secret).not.toBeNull()
       expect(secret?.session_epoch).toBe(1)
 
-      // 2. Login with correct code
+      // 2. Login with correct numerical PIN
       const loginReq = new NextRequest('http://localhost:3000/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: 'my-super-secret-vault-code-2026' }),
+        body: JSON.stringify({ code: '5821' }),
       })
       const loginRes = await loginPost(loginReq)
       expect(loginRes.status).toBe(200)
       expect(loginRes.headers.get('set-cookie')).toContain('oc_session')
 
-      // 3. Login with wrong code
+      // 3. Login with wrong numerical PIN
       const badLoginReq = new NextRequest('http://localhost:3000/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: 'wrong-passphrase' }),
+        body: JSON.stringify({ code: '9999' }),
       })
       const badLoginRes = await loginPost(badLoginReq)
       expect(badLoginRes.status).toBe(401)
@@ -406,7 +416,7 @@ describe('Rigorous Feature & API Test Suite', () => {
       const setupReq = new NextRequest('http://localhost:3000/api/auth/setup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' },
-        body: JSON.stringify({ code: 'initial-vault-passcode-2026' }),
+        body: JSON.stringify({ code: '5821' }),
       })
       await setupPost(setupReq)
 
@@ -418,13 +428,25 @@ describe('Rigorous Feature & API Test Suite', () => {
         j: 'test-j',
       })
 
-      // Rotate code
+      // Reject non-numerical rotation
+      const badRotateReq = new NextRequest('http://localhost:3000/api/auth/rotate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' },
+        body: JSON.stringify({
+          current: '5821',
+          next: 'letters-not-allowed',
+        }),
+      })
+      const badRotateRes = await rotatePost(badRotateReq)
+      expect(badRotateRes.status).toBe(400)
+
+      // Rotate with valid numerical PIN
       const rotateReq = new NextRequest('http://localhost:3000/api/auth/rotate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' },
         body: JSON.stringify({
-          current: 'initial-vault-passcode-2026',
-          next: 'brand-new-rotated-passcode-2026',
+          current: '5821',
+          next: '9432',
         }),
       })
 

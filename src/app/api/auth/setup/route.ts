@@ -6,7 +6,12 @@ import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
 
-const bodySchema = z.object({ code: z.string().min(10, 'Use at least 10 characters') })
+const bodySchema = z.object({
+  code: z
+    .string()
+    .min(4, 'Use at least 4 numerical digits')
+    .regex(/^\d+$/, 'PIN must contain numbers only'),
+})
 
 /** First run only: create the vault with an Argon2id hash of the passphrase. */
 export async function POST(req: NextRequest) {

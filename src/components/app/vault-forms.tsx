@@ -7,19 +7,29 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
-// Vault code UI shared by /login, /setup and Settings rotation.
-
+// Numerical Vault PIN UI shared by /login, /setup and Settings rotation.
 export function strengthOf(code: string): { score: 0 | 1 | 2 | 3 | 4; label: string; color: string } {
-  let pts = 0
-  if (code.length >= 10) pts += 2
-  else if (code.length >= 6) pts += 1
-  if (/[a-z]/.test(code) && /[A-Z]/.test(code)) pts += 1
-  if (/\d/.test(code)) pts += 1
-  if (/[^A-Za-z0-9]/.test(code)) pts += 1
-  const score = Math.min(4, pts) as 0 | 1 | 2 | 3 | 4
-  const labels = ['Too short', 'Weak', 'Fair', 'Good', 'Strong']
-  const colors = ['bg-stone-300', 'bg-rose-400', 'bg-amber-400', 'bg-lime-500', 'bg-emerald-500']
-  return { score, label: labels[score], color: colors[score] }
+  if (!code || code.length < 4) {
+    return { score: 0, label: 'Too short (min 4 digits)', color: 'bg-stone-300' }
+  }
+  if (!/^\d+$/.test(code)) {
+    return { score: 0, label: 'Numerical digits only', color: 'bg-rose-400' }
+  }
+  // Check common weak patterns (all identical digits like 1111, 0000)
+  const isRepetitive = /^(\d)\1+$/.test(code)
+  // Check simple consecutive sequences like 1234, 4321
+  const isSequential = '01234567890123456789'.includes(code) || '98765432109876543210'.includes(code)
+
+  if (isRepetitive || isSequential) {
+    return { score: 1, label: 'Weak PIN (predictable)', color: 'bg-rose-400' }
+  }
+  if (code.length === 4) {
+    return { score: 3, label: 'Good 4-digit PIN', color: 'bg-lime-500' }
+  }
+  if (code.length === 5) {
+    return { score: 3, label: 'Strong 5-digit PIN', color: 'bg-emerald-500' }
+  }
+  return { score: 4, label: 'Very Strong PIN', color: 'bg-emerald-600' }
 }
 
 function StrengthMeter({ code }: { code: string }) {
@@ -30,12 +40,12 @@ function StrengthMeter({ code }: { code: string }) {
         {[0, 1, 2, 3].map((i) => (
           <span
             key={i}
-            className={`h-1.5 flex-1 rounded-full ${code.length === 0 ? 'bg-stone-200' : i < s.score ? s.color : 'bg-stone-200'}`}
+            className={`h-1.5 flex-1 rounded-full ${code.length === 0 ? 'bg-stone-200 dark:bg-stone-800' : i < s.score ? s.color : 'bg-stone-200 dark:bg-stone-800'}`}
           />
         ))}
       </div>
       <p className="mt-1 text-[11px] text-muted-foreground">
-        {code.length === 0 ? 'Use at least 10 characters — a phrase works well' : s.label}
+        {code.length === 0 ? 'Enter at least 4 numerical digits' : s.label}
       </p>
     </div>
   )
@@ -46,11 +56,13 @@ function CodeInput({
   onChange,
   label,
   autoFocus,
+  placeholder,
 }: {
   value: string
   onChange: (v: string) => void
   label: string
   autoFocus?: boolean
+  placeholder?: string
 }) {
   const [show, setShow] = useState(false)
   return (
@@ -59,17 +71,23 @@ function CodeInput({
       <span className="relative block">
         <Input
           type={show ? 'text' : 'password'}
+          inputMode="numeric"
+          pattern="[0-9]*"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => {
+            const digitsOnly = e.target.value.replace(/\D/g, '')
+            onChange(digitsOnly)
+          }}
           autoFocus={autoFocus}
           autoComplete="current-password"
-          className="h-12 rounded-xl border-[rgba(225,29,72,0.2)] bg-white/80 pr-11 text-base"
+          placeholder={placeholder ?? '••••'}
+          className="h-12 rounded-xl border-[rgba(225,29,72,0.2)] bg-white/80 dark:bg-stone-900/80 pr-11 font-mono tracking-widest text-lg sm:text-xl text-center"
         />
         <button
           type="button"
           onClick={() => setShow((v) => !v)}
-          aria-label={show ? 'Hide code' : 'Show code'}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+          aria-label={show ? 'Hide PIN' : 'Show PIN'}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
         >
           {show ? <EyeOff className="h-4.5 w-4.5" aria-hidden /> : <Eye className="h-4.5 w-4.5" aria-hidden />}
         </button>
@@ -101,6 +119,10 @@ export function LoginForm() {
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     if (busy) return
+    if (!/^\d+$/.test(code)) {
+      setError('PIN must contain numbers only')
+      return
+    }
     setBusy(true)
     setError(null)
     try {
@@ -126,7 +148,13 @@ export function LoginForm() {
   return (
     <form onSubmit={submit} className="card-soft w-full max-w-sm p-7">
       <VaultLogo />
-      <CodeInput value={code} onChange={setCode} label="Vault code" autoFocus />
+      <CodeInput
+        value={code}
+        onChange={setCode}
+        label="Vault PIN"
+        placeholder="••••"
+        autoFocus
+      />
       {error ? (
         <p role="alert" className="mt-3 text-sm text-destructive">
           {error}
@@ -135,9 +163,9 @@ export function LoginForm() {
       <Button
         type="submit"
         disabled={busy || code.length === 0}
-        className="mt-5 h-12 w-full rounded-full bg-primary text-base font-semibold text-primary-foreground"
+        className="mt-5 h-12 w-full rounded-full bg-primary text-base font-semibold text-primary-foreground shadow-sm transition hover:opacity-95"
       >
-        {busy ? 'Unlocking…' : 'Unlock'}
+        {busy ? 'Unlocking…' : 'Unlock Vault'}
       </Button>
       <p className="mt-4 text-center text-[11px] text-muted-foreground">
         5 wrong attempts lock the vault for 10 minutes.
@@ -152,17 +180,20 @@ export function SetupForm() {
   const [confirm, setConfirm] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const strength = useMemo(() => strengthOf(code), [code])
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     if (busy) return
-    if (code.length < 10) {
-      setError('Use at least 10 characters')
+    if (!/^\d+$/.test(code)) {
+      setError('PIN must contain numbers only')
+      return
+    }
+    if (code.length < 4) {
+      setError('Use at least 4 numerical digits')
       return
     }
     if (code !== confirm) {
-      setError('The two codes do not match')
+      setError('The two PIN codes do not match')
       return
     }
     setBusy(true)
@@ -190,10 +221,21 @@ export function SetupForm() {
   return (
     <form onSubmit={submit} className="card-soft w-full max-w-sm p-7">
       <VaultLogo />
-      <CodeInput value={code} onChange={setCode} label="Set your vault code" autoFocus />
+      <CodeInput
+        value={code}
+        onChange={setCode}
+        label="Set your numerical PIN"
+        placeholder="••••"
+        autoFocus
+      />
       <StrengthMeter code={code} />
       <div className="mt-4">
-        <CodeInput value={confirm} onChange={setConfirm} label="Repeat it once" />
+        <CodeInput
+          value={confirm}
+          onChange={setConfirm}
+          label="Repeat PIN to confirm"
+          placeholder="••••"
+        />
       </div>
       {error ? (
         <p role="alert" className="mt-3 text-sm text-destructive">
@@ -202,13 +244,13 @@ export function SetupForm() {
       ) : null}
       <Button
         type="submit"
-        disabled={busy || code.length < 10 || confirm.length === 0}
+        disabled={busy || code.length < 4 || confirm.length === 0}
         className="mt-5 h-12 w-full rounded-full bg-primary text-base font-semibold text-primary-foreground"
       >
-        {busy ? 'Creating vault…' : 'Create vault'}
+        {busy ? 'Creating vault…' : 'Create vault PIN'}
       </Button>
       <p className="mt-4 text-center text-[11px] leading-relaxed text-muted-foreground">
-        The code is hashed with Argon2id — nobody (including us) can read it. Write it
+        The numerical PIN is hashed with Argon2id — nobody can read it. Write it
         down somewhere safe: there is no reset.
       </p>
     </form>
@@ -225,8 +267,12 @@ export function RotateForm() {
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     if (busy) return
-    if (next.length < 10) {
-      setMsg('New code needs at least 10 characters')
+    if (!/^\d+$/.test(next)) {
+      setMsg('New PIN must contain numbers only')
+      return
+    }
+    if (next.length < 4) {
+      setMsg('New PIN needs at least 4 digits')
       return
     }
     setBusy(true)
@@ -238,7 +284,7 @@ export function RotateForm() {
         body: JSON.stringify({ current, next }),
       })
       if (res.status === 401) {
-        setMsg('Incorrect current vault code')
+        setMsg('Incorrect current vault PIN')
         return
       }
       if (!res.ok) {
@@ -248,7 +294,7 @@ export function RotateForm() {
       }
       setCurrent('')
       setNext('')
-      toast.success('Vault code updated — other devices were signed out')
+      toast.success('Vault PIN updated — other devices were signed out')
       router.refresh()
     } catch {
       setMsg('No connection — try again once online')
@@ -259,9 +305,19 @@ export function RotateForm() {
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <CodeInput value={current} onChange={setCurrent} label="Current vault code" />
+      <CodeInput
+        value={current}
+        onChange={setCurrent}
+        label="Current vault PIN"
+        placeholder="••••"
+      />
       <div>
-        <CodeInput value={next} onChange={setNext} label="New vault code" />
+        <CodeInput
+          value={next}
+          onChange={setNext}
+          label="New vault PIN"
+          placeholder="••••"
+        />
         <StrengthMeter code={next} />
       </div>
       {msg ? (
@@ -271,11 +327,11 @@ export function RotateForm() {
       ) : null}
       <Button
         type="submit"
-        disabled={busy || !current || next.length < 10}
+        disabled={busy || !current || next.length < 4}
         variant="outline"
         className="h-11 w-full rounded-full border-[rgba(225,29,72,0.3)] text-primary"
       >
-        {busy ? 'Updating…' : 'Update vault code'}
+        {busy ? 'Updating…' : 'Update vault PIN'}
       </Button>
     </form>
   )

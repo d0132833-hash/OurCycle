@@ -631,9 +631,9 @@ export function SettingsView({
       {/* Vault */}
       <Card className="card-soft border-0">
         <CardContent className="p-5">
-          <h3 className="font-display text-base font-semibold">Vault code</h3>
+          <h3 className="font-display text-base font-semibold">Vault PIN</h3>
           <p className="mb-4 text-sm text-muted-foreground">
-            Changing it signs out every other device immediately.
+            Changing your numerical PIN signs out every other device immediately.
           </p>
           <RotateForm />
         </CardContent>
@@ -849,7 +849,7 @@ export function SettingsView({
           <AlertDialogHeader>
             <AlertDialogTitle className="font-display text-base text-rose-600">Reset all tracking data?</AlertDialogTitle>
             <AlertDialogDescription className="text-xs">
-              This will erase all logged periods, symptoms, and forecasts. Your vault password will remain active.
+              This will erase all logged periods, symptoms, and forecasts. Your vault PIN will remain active.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-row gap-2 pt-2">

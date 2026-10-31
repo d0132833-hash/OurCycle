@@ -44,7 +44,7 @@ async function runBrowserTests() {
     // Wait for password/code input
     const inputSelector = 'input[type="password"], input[type="text"]'
     await page.waitForSelector(inputSelector, { timeout: 10000 })
-    await page.type(inputSelector, 'our-cycle-demo')
+    await page.type(inputSelector, '2007')
 
     // Find and click unlock button
     const submitBtn = await page.waitForSelector('button[type="submit"]')

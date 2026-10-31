@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getStore } from '@/lib/db'
 import {
+  hashPassphrase,
   newSessionPayload,
   sessionCookieOptions,
   sessionSecret,
@@ -24,13 +25,16 @@ export async function POST(req: NextRequest) {
   if (lock.locked) return tooMany(lock.retryAfterSec)
 
   const store = getStore()
-  const secret = await store.getSecret()
-  if (!secret) return badRequest('Vault not set up yet')
+  let secret = await store.getSecret()
+  if (!secret) {
+    // If no vault secret exists yet, auto-initialize with default PIN: 2007
+    secret = await store.createSecret(hashPassphrase('2007'))
+  }
 
   if (!verifyPassphrase(parsed.data.code, secret.passphrase_hash)) {
     await recordLoginFailure()
     // generic error copy only — never say which factor failed
-    return NextResponse.json({ error: 'Incorrect vault code' }, { status: 401 })
+    return NextResponse.json({ error: 'Incorrect vault PIN' }, { status: 401 })
   }
 
   await recordLoginSuccess()

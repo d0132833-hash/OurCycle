@@ -23,5 +23,5 @@ Work Log:
 
 Stage Summary:
 - App fully implemented and verified; dev server healthy on port 3000; 25/25 unit tests pass; lint + tsc clean (app code)
-- Demo state: local store seeded with 8 cycles; vault code "our-cycle-demo" for preview login
+- Demo state: local store seeded with 8 cycles; numerical vault PIN configured for preview login
 - Deliverables: full src/, supabase/migration.sql, scripts/seed.ts, scripts/gen-icons.mjs, tests/predictions.test.ts, README.md

@@ -47,7 +47,7 @@ A private, two-person menstrual cycle tracker, installed as a PWA straight from 
 
 ### 3. First-run setup (≈1 min)
 
-1. Open the deployed URL → you land on **"Set your vault code"** (min 10 chars, strength meter). It is stored only as an **Argon2id** hash in `app_secrets`.
+1. Open the deployed URL → unlock with your numerical PIN (or set up a 4+ digit numerical PIN). It is stored only as an **Argon2id** hash in `app_secrets`.
 2. You're redirected to Today → the bootstrap form asks for the first day of the last period + typical cycle length (slider 21–45, default 28). Predictions start immediately and sharpen with every log.
 
 ### 4. Install as an app (Add to Home Screen)
@@ -85,6 +85,40 @@ bun run lint
 Without Supabase env vars the app transparently falls back to a JSON file store (`.data/db.json`, gitignored) with identical semantics — handy for trying everything without a cloud project. In production the env vars are always present, so that path is dead code.
 
 `next/font` self-hosts Fraunces + DM Sans at build time; there are no external font CDNs, no analytics, no trackers.
+
+---
+
+## Pushing changes to GitHub
+
+After making code updates, styling tweaks, or new features, follow these steps to verify and push everything to GitHub:
+
+1. **Run tests and build verification:**
+   ```bash
+   npm test        # or: bun test
+   npm run build   # verifies Next.js compilation and type safety
+   ```
+
+2. **Stage modified and new files:**
+   ```bash
+   git add .
+   ```
+
+3. **Check staged files:**
+   ```bash
+   git status
+   ```
+
+4. **Commit with a descriptive message:**
+   ```bash
+   git commit -m "feat: description of changes"
+   ```
+
+5. **Push everything to GitHub:**
+   ```bash
+   git push origin main
+   ```
+
+> **Note on SSH Key**: If using the repository-specific key, git uses `core.sshCommand = "ssh -i ~/.ssh/id_ourcycle -o IdentitiesOnly=yes"`.
 
 ---
 
