@@ -38,8 +38,13 @@ async function main() {
   console.log(`seeding into: ${store.kind === 'local' ? 'local dev store' : 'Supabase project'}`)
 
   if (!(await store.getSecret())) {
-    await store.createSecret(hashPassphrase('2007'))
-    console.log('initialized vault secret with default numerical PIN')
+    const seedPin = process.env.SEED_VAULT_PIN || process.env.VAULT_PIN
+    if (seedPin) {
+      await store.createSecret(hashPassphrase(seedPin))
+      console.log('initialized vault secret with PIN from environment variable')
+    } else {
+      console.log('No existing vault secret found. Vault remains uninitialized for first-time setup at /setup.')
+    }
   }
 
   const existing = await store.listPeriods()

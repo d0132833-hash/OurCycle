@@ -47,7 +47,7 @@ A private, two-person menstrual cycle tracker, installed as a PWA straight from 
 
 ### 3. First-run setup (≈1 min)
 
-1. Open the deployed URL → unlock with your numerical PIN (or set up a 4+ digit numerical PIN). It is stored only as an **Argon2id** hash in `app_secrets`.
+1. Open the deployed URL → you are automatically redirected to `/setup` to create and confirm your own private numerical PIN (there are no hardcoded default passwords). It is stored strictly as an **Argon2id** hash in `app_secrets`.
 2. You're redirected to Today → the bootstrap form asks for the first day of the last period + typical cycle length (slider 21–45, default 28). Predictions start immediately and sharpen with every log.
 
 ### 4. Install as an app (Add to Home Screen)

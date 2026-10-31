@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getStore } from '@/lib/db'
 import {
-  hashPassphrase,
   newSessionPayload,
   sessionCookieOptions,
   sessionSecret,
@@ -25,10 +24,12 @@ export async function POST(req: NextRequest) {
   if (lock.locked) return tooMany(lock.retryAfterSec)
 
   const store = getStore()
-  let secret = await store.getSecret()
+  const secret = await store.getSecret()
   if (!secret) {
-    // If no vault secret exists yet, auto-initialize with default PIN: 2007
-    secret = await store.createSecret(hashPassphrase('2007'))
+    return NextResponse.json(
+      { error: 'Vault has not been initialized yet. Please complete setup first.' },
+      { status: 400 },
+    )
   }
 
   if (!verifyPassphrase(parsed.data.code, secret.passphrase_hash)) {

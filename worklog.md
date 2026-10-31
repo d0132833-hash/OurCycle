@@ -43,3 +43,29 @@ Work Log:
 - Documented the system rule across `README.md`, `CONTRIBUTING.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, and `worklog.md`: "After making changes, update all the system markdown files & then push everything to github".
 - Tested and verified: vitest suite (80/80 passing tests) and Next.js 16 build (`npm run build` compiled cleanly).
 - Pushed changes to GitHub remote (`origin main`).
+
+---
+Task ID: 3
+Agent: Antigravity
+Task: Live Chrome E2E browser testing, eradicate hardcoded fallback PIN (2007), enforce secure first-run setup onboarding, update system markdown documentation, and push to GitHub.
+
+Work Log:
+- Executed full 7-step Puppeteer browser E2E test suite with slowMo verification against the running Next.js dev server:
+  1. Vault unlock & login flow
+  2. Perspective toggle & Partner Care Companion
+  3. Quick-log presets (#tea, cramp & rest) & lifestyle tracker
+  4. Calendar view & .ics export button
+  5. Insights, BBT temperature chart & correlation insights
+  6. Clinical Doctor Summary Report (/report)
+  7. Settings aesthetic palettes (Lavender) & Discreet Mode
+- Clarified desktop shell isolation on Windows background subshells and launched user browser via `explorer.exe "http://localhost:3000"`.
+- Identified and eliminated critical security flaw where PIN `2007` was hardcoded as a fallback secret in `login/page.tsx` and `api/auth/login/route.ts`:
+  - Removed auto-creation of default PIN `2007`.
+  - Configured `login/page.tsx` to redirect straight to `/setup` if no secret is initialized.
+  - Configured `POST /api/auth/login` to return HTTP 400 rejection if the vault is uninitialized.
+  - Refactored `scripts/seed.ts` to only use `SEED_VAULT_PIN`/`VAULT_PIN` environment variables if explicitly passed.
+  - Hardened `scripts/browser-test.mjs` with dual setup/login auto-detection.
+  - Reset local secret in `.data/db.json` while maintaining all period logs and historical records.
+- Verified test suite: 80/80 tests passing in Vitest, TypeScript typecheck zero errors (`npx tsc --noEmit`), and Next.js production build (`npx next build`) compiled successfully.
+- Updated all system markdown files (`CHANGELOG.md`, `worklog.md`, `README.md`, `ARCHITECTURE.md`) in compliance with repository maintenance rules.
+- Pushed changes to GitHub remote repository (`origin main`).

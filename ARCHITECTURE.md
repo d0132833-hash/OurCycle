@@ -83,6 +83,11 @@ The application operates against a uniform `Store` interface (`src/lib/storage.t
 - **Her View (`src/components/app/today-view.tsx`, `period-actions.tsx`)**: Focuses on symptom logging, cycle tracking, countdown forecasting, and real-time entry editing. When an entry has been recorded for today, the primary button switches dynamically to *"Edit today's log"* and renders a *"Logged for Today"* preview card with symptom chips, linking to the pre-filled `DaySheet` drawer for instant updates or clears.
 - **Partner View (`src/components/app/partner-view.tsx`)**: Translates biological phase changes into actionable empathy guidance, real-time symptom alerts, and unprompted support suggestions.
 
+### E. Cryptography & Vault Security
+- **Argon2id Hashing**: Passphrases and numerical PINs are hashed using OWASP-compliant parameters ($m=19456$, $t=2$, $p=1$) via `@noble/hashes`.
+- **Zero Default Passwords**: There are no hardcoded default passwords or backdoors. Uninitialized vaults automatically enforce first-run onboarding at `/setup`.
+- **Session HMAC & Epoch Rotation**: Session cookies (`oc_session`) carry HMAC-SHA256 signatures with 30-day sliding refresh and an internal `session_epoch`. Rotating the vault PIN bumps the epoch, immediately invalidating all active cookies across all devices.
+
 ---
 
 ## 3. Directory Layout

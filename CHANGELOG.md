@@ -4,6 +4,27 @@ All notable changes and architectural features introduced to the Our Cycle codeb
 
 ---
 
+## [0.3.2] — 2026-10-31
+
+### 🔒 Critical Security Patch: Eradication of Hardcoded Default Vault PIN & Setup Onboarding Enforcement
+
+#### 1. Zero Hardcoded PINs in Auth Layer (`login/page.tsx` & `api/auth/login/route.ts`)
+- Removed the development shortcut that previously auto-initialized the vault with PIN `2007` when no secret existed.
+- `src/app/(auth)/login/page.tsx` now checks `!(await store.getSecret())` and redirects visitors straight to `/setup`.
+- `POST /api/auth/login` returns `HTTP 400 - "Vault has not been initialized yet. Please complete setup first."` if called against an uninitialized vault. Attempting to brute-force or use `2007` fails outright.
+
+#### 2. Enforced First-Time Setup Flow (`/setup`)
+- Every new deployment (Vercel / Supabase) and clean database state now strictly routes through the secure `SetupForm` (`/setup`), ensuring users create and confirm their own private numerical PIN.
+
+#### 3. Seed & Test Automation Hardening (`seed.ts` & `browser-test.mjs`)
+- `scripts/seed.ts` now inspects `process.env.SEED_VAULT_PIN` or `process.env.VAULT_PIN`, leaving the vault uninitialized for first-time user setup if no PIN is explicitly provided.
+- `scripts/browser-test.mjs` dynamically detects whether the app is in `/setup` or `/login` mode and supports `process.env.TEST_VAULT_PIN`.
+
+#### 4. Local Database Sanity
+- Local development store (`.data/db.json`) secret was cleared, enforcing the setup screen on local development while preserving all period histories, daily entries, and settings.
+
+---
+
 ## [0.3.1] — 2026-10-31
 
 ### ✏️ Today Log Editing & System Workflow Enhancements
