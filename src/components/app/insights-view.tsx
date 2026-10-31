@@ -259,189 +259,212 @@ export function InsightsView({
         </Card>
       </motion.div>
 
-      {/* Cycle trend */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.05 }}
-      >
-        <Card className="card-soft border-0">
-          <CardContent className="p-5">
-            <h3 className="font-display text-base font-semibold">Cycle lengths</h3>
-            {trend.count > 0 ? (
-              <>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Last {trend.count} cycle{trend.count > 1 ? 's' : ''} · average period ~
-                  {trend.avgDuration ?? prediction.predictedPeriodDuration} days
-                  {prediction.usingOverride
-                    ? ` · fixed length ${prediction.cycleLength}d (auto-learn suggests ~${prediction.autoCycleLength}d)`
-                    : ''}
-                </p>
-                <div className="mt-3 h-44">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={trend.data} margin={{ top: 8, right: 8, left: -22, bottom: 0 }}>
-                      <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={11} stroke="#8A7F78" />
-                      <YAxis domain={[18, 'auto']} tickLine={false} axisLine={false} fontSize={11} stroke="#8A7F78" />
-                      <Tooltip
-                        cursor={{ fill: 'rgba(225,29,72,0.06)' }}
-                        contentStyle={{ borderRadius: 12, border: '1px solid rgba(225,29,72,0.15)', fontSize: 12 }}
-                        formatter={(v: number, _n, item) => [
-                          item.payload.flagged ? `${v}d (flagged)` : `${v} days`,
-                          'Cycle',
-                        ]}
-                      />
-                      <ReferenceLine
-                        y={prediction.autoCycleLength ?? prediction.cycleLength ?? 28}
-                        stroke="#FDBA74"
-                        strokeDasharray="4 4"
-                      />
-                      <Bar dataKey="length" radius={[6, 6, 0, 0]} maxBarSize={34}>
-                        {trend.data.map((d, i) => (
-                          <Cell key={i} fill={d.flagged ? '#FDBA74' : '#E11D48'} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                <p className="mt-1 text-[11px] text-muted-foreground">
+      {/* Responsive 2-Column Chart Grid for Tablet & Laptop */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5 items-stretch">
+        {/* Cycle trend */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.05 }}
+          className="h-full"
+        >
+          <Card className="card-soft border-0 h-full flex flex-col justify-between">
+            <CardContent className="p-5 flex-1 flex flex-col justify-between">
+              <div>
+                <h3 className="font-display text-base font-semibold">Cycle lengths</h3>
+                {trend.count > 0 ? (
+                  <>
+                    <p className="mt-1 text-xs md:text-sm text-muted-foreground">
+                      Last {trend.count} cycle{trend.count > 1 ? 's' : ''} · average period ~
+                      {trend.avgDuration ?? prediction.predictedPeriodDuration} days
+                      {prediction.usingOverride
+                        ? ` · fixed length ${prediction.cycleLength}d (auto-learn suggests ~${prediction.autoCycleLength}d)`
+                        : ''}
+                    </p>
+                    <div className="mt-3 h-48 md:h-52">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={trend.data} margin={{ top: 8, right: 8, left: -22, bottom: 0 }}>
+                          <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={11} stroke="#8A7F78" />
+                          <YAxis domain={[18, 'auto']} tickLine={false} axisLine={false} fontSize={11} stroke="#8A7F78" />
+                          <Tooltip
+                            cursor={{ fill: 'rgba(225,29,72,0.06)' }}
+                            contentStyle={{ borderRadius: 12, border: '1px solid rgba(225,29,72,0.15)', fontSize: 12 }}
+                            formatter={(v: number, _n, item) => [
+                              item.payload.flagged ? `${v}d (flagged)` : `${v} days`,
+                              'Cycle',
+                            ]}
+                          />
+                          <ReferenceLine
+                            y={prediction.autoCycleLength ?? prediction.cycleLength ?? 28}
+                            stroke="#FDBA74"
+                            strokeDasharray="4 4"
+                          />
+                          <Bar dataKey="length" radius={[6, 6, 0, 0]} maxBarSize={34}>
+                            {trend.data.map((d, i) => (
+                              <Cell key={i} fill={d.flagged ? '#FDBA74' : '#E11D48'} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </>
+                ) : (
+                  <EmptyChartState
+                    icon={TrendingUp}
+                    title="Building your cycle rhythm"
+                    description="After two completed period cycles, your rhythm trend and length variations appear here."
+                  />
+                )}
+              </div>
+              {trend.count > 0 && (
+                <p className="mt-2 text-[11px] text-muted-foreground">
                   Dashed line: learned average. Amber bars were flagged as unusual and don&apos;t skew the forecast.
                 </p>
-              </>
-            ) : (
-              <EmptyChartState
-                icon={TrendingUp}
-                title="Building your cycle rhythm"
-                description="After two completed period cycles, your rhythm trend and length variations appear here."
-              />
-            )}
-          </CardContent>
-        </Card>
-      </motion.div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
 
-      {/* Sex drive by phase */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.1 }}
-      >
-        <Card className="card-soft border-0">
-          <CardContent className="p-5">
-            <h3 className="font-display text-base font-semibold">Sex drive by phase</h3>
-            {libidoData.hasData ? (
-              <>
-                <div className="mt-3 h-40">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={libidoData.data} margin={{ top: 8, right: 8, left: -28, bottom: 0 }}>
-                      <XAxis dataKey="phase" tickLine={false} axisLine={false} fontSize={11} stroke="#8A7F78" />
-                      <YAxis domain={[0, 5]} tickLine={false} axisLine={false} fontSize={11} stroke="#8A7F78" />
-                      <Tooltip
-                        cursor={{ fill: 'rgba(225,29,72,0.06)' }}
-                        contentStyle={{ borderRadius: 12, border: '1px solid rgba(225,29,72,0.15)', fontSize: 12 }}
-                      />
-                      <Bar dataKey="value" fill="#FDBA74" radius={[6, 6, 0, 0]} maxBarSize={40} name="Avg libido" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                <p className="mt-1 text-[11px] text-muted-foreground">
+        {/* Sex drive by phase */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+          className="h-full"
+        >
+          <Card className="card-soft border-0 h-full flex flex-col justify-between">
+            <CardContent className="p-5 flex-1 flex flex-col justify-between">
+              <div>
+                <h3 className="font-display text-base font-semibold">Sex drive by phase</h3>
+                {libidoData.hasData ? (
+                  <>
+                    <div className="mt-3 h-48 md:h-52">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={libidoData.data} margin={{ top: 8, right: 8, left: -28, bottom: 0 }}>
+                          <XAxis dataKey="phase" tickLine={false} axisLine={false} fontSize={11} stroke="#8A7F78" />
+                          <YAxis domain={[0, 5]} tickLine={false} axisLine={false} fontSize={11} stroke="#8A7F78" />
+                          <Tooltip
+                            cursor={{ fill: 'rgba(225,29,72,0.06)' }}
+                            contentStyle={{ borderRadius: 12, border: '1px solid rgba(225,29,72,0.15)', fontSize: 12 }}
+                          />
+                          <Bar dataKey="value" fill="#FDBA74" radius={[6, 6, 0, 0]} maxBarSize={40} name="Avg libido" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </>
+                ) : (
+                  <EmptyChartState
+                    icon={Flame}
+                    title="Discover your hormonal pattern"
+                    description="Log your energy and libido on a few days to visualize your natural cycle phases."
+                  />
+                )}
+              </div>
+              {libidoData.hasData && (
+                <p className="mt-2 text-[11px] text-muted-foreground">
                   Your personal pattern — sex drive often shifts with hormonal peaks, but everyone is unique.
                 </p>
-              </>
-            ) : (
-              <EmptyChartState
-                icon={Flame}
-                title="Discover your hormonal pattern"
-                description="Log your energy and libido on a few days to visualize your natural cycle phases."
-              />
-            )}
-          </CardContent>
-        </Card>
-      </motion.div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
 
-      {/* Pain by phase */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.15 }}
-      >
-        <Card className="card-soft border-0">
-          <CardContent className="p-5">
-            <h3 className="font-display text-base font-semibold">Pain &amp; symptoms by phase</h3>
-            {painData.hasData ? (
-              <>
-                {painData.line ? (
-                  <p className="mt-1 text-sm font-medium text-rose-600 dark:text-rose-400">{painData.line}</p>
-                ) : null}
-                <div className="mt-3 h-40">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={painData.data} margin={{ top: 8, right: 8, left: -28, bottom: 0 }}>
-                      <XAxis dataKey="phase" tickLine={false} axisLine={false} fontSize={11} stroke="#8A7F78" />
-                      <YAxis allowDecimals={false} tickLine={false} axisLine={false} fontSize={11} stroke="#8A7F78" />
-                      <Tooltip
-                        cursor={{ fill: 'rgba(225,29,72,0.06)' }}
-                        contentStyle={{ borderRadius: 12, border: '1px solid rgba(225,29,72,0.15)', fontSize: 12 }}
-                      />
-                      <Bar dataKey="value" fill="#FB7185" radius={[6, 6, 0, 0]} maxBarSize={40} name="Symptom days" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                <p className="mt-1 text-[11px] text-muted-foreground">
+        {/* Pain by phase */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.15 }}
+          className="h-full"
+        >
+          <Card className="card-soft border-0 h-full flex flex-col justify-between">
+            <CardContent className="p-5 flex-1 flex flex-col justify-between">
+              <div>
+                <h3 className="font-display text-base font-semibold">Pain &amp; symptoms by phase</h3>
+                {painData.hasData ? (
+                  <>
+                    {painData.line ? (
+                      <p className="mt-1 text-sm font-medium text-rose-600 dark:text-rose-400">{painData.line}</p>
+                    ) : null}
+                    <div className="mt-3 h-48 md:h-52">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={painData.data} margin={{ top: 8, right: 8, left: -28, bottom: 0 }}>
+                          <XAxis dataKey="phase" tickLine={false} axisLine={false} fontSize={11} stroke="#8A7F78" />
+                          <YAxis allowDecimals={false} tickLine={false} axisLine={false} fontSize={11} stroke="#8A7F78" />
+                          <Tooltip
+                            cursor={{ fill: 'rgba(225,29,72,0.06)' }}
+                            contentStyle={{ borderRadius: 12, border: '1px solid rgba(225,29,72,0.15)', fontSize: 12 }}
+                          />
+                          <Bar dataKey="value" fill="#FB7185" radius={[6, 6, 0, 0]} maxBarSize={40} name="Symptom days" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </>
+                ) : (
+                  <EmptyChartState
+                    icon={HeartPulse}
+                    title="Map symptom clusters"
+                    description="Log physical symptoms like cramps or bloating to see when they cluster in your cycle."
+                  />
+                )}
+              </div>
+              {painData.hasData && (
+                <p className="mt-2 text-[11px] text-muted-foreground">
                   Days with logged cramps, headaches, or tension, grouped by cycle phase.
                 </p>
-              </>
-            ) : (
-              <EmptyChartState
-                icon={HeartPulse}
-                title="Map symptom clusters"
-                description="Log physical symptoms like cramps or bloating to see when they cluster in your cycle."
-              />
-            )}
-          </CardContent>
-        </Card>
-      </motion.div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
 
-      {/* Flow shape */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.2 }}
-      >
-        <Card className="card-soft border-0">
-          <CardContent className="p-5">
-            <h3 className="font-display text-base font-semibold">Your flow shape</h3>
-            {flowData.hasData ? (
-              <>
-                <div className="mt-3 h-40">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={flowData.data} margin={{ top: 8, right: 8, left: -28, bottom: 0 }}>
-                      <XAxis dataKey="day" tickLine={false} axisLine={false} fontSize={11} stroke="#8A7F78" />
-                      <YAxis domain={[0, 4]} tickCount={5} tickLine={false} axisLine={false} fontSize={11} stroke="#8A7F78" />
-                      <Tooltip
-                        cursor={{ fill: 'rgba(225,29,72,0.06)' }}
-                        contentStyle={{ borderRadius: 12, border: '1px solid rgba(225,29,72,0.15)', fontSize: 12 }}
-                        formatter={(v: number) => [FLOW_LABEL[Math.min(4, Math.round(v))], 'Avg flow']}
-                      />
-                      <Bar dataKey="avg" radius={[6, 6, 0, 0]} maxBarSize={34}>
-                        {flowData.data.map((d, i) => (
-                          <Cell key={i} fill={FLOW_COLOR[Math.min(4, Math.max(0, d.idx))]} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                <p className="mt-1 text-[11px] text-muted-foreground">
+        {/* Flow shape */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+          className="h-full"
+        >
+          <Card className="card-soft border-0 h-full flex flex-col justify-between">
+            <CardContent className="p-5 flex-1 flex flex-col justify-between">
+              <div>
+                <h3 className="font-display text-base font-semibold">Your flow shape</h3>
+                {flowData.hasData ? (
+                  <>
+                    <div className="mt-3 h-48 md:h-52">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={flowData.data} margin={{ top: 8, right: 8, left: -28, bottom: 0 }}>
+                          <XAxis dataKey="day" tickLine={false} axisLine={false} fontSize={11} stroke="#8A7F78" />
+                          <YAxis domain={[0, 4]} tickCount={5} tickLine={false} axisLine={false} fontSize={11} stroke="#8A7F78" />
+                          <Tooltip
+                            cursor={{ fill: 'rgba(225,29,72,0.06)' }}
+                            contentStyle={{ borderRadius: 12, border: '1px solid rgba(225,29,72,0.15)', fontSize: 12 }}
+                            formatter={(v: number) => [FLOW_LABEL[Math.min(4, Math.round(v))], 'Avg flow']}
+                          />
+                          <Bar dataKey="avg" radius={[6, 6, 0, 0]} maxBarSize={34}>
+                            {flowData.data.map((d, i) => (
+                              <Cell key={i} fill={FLOW_COLOR[Math.min(4, Math.max(0, d.idx))]} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </>
+                ) : (
+                  <EmptyChartState
+                    icon={Droplets}
+                    title="Reveal your flow curve"
+                    description="Log daily flow during your period to see your typical progression from start to finish."
+                  />
+                )}
+              </div>
+              {flowData.hasData && (
+                <p className="mt-2 text-[11px] text-muted-foreground">
                   Average flow intensity by period day — your signature bleeding pattern over time.
                 </p>
-              </>
-            ) : (
-              <EmptyChartState
-                icon={Droplets}
-                title="Reveal your flow curve"
-                description="Log daily flow during your period to see your typical progression from start to finish."
-              />
-            )}
-          </CardContent>
-        </Card>
-      </motion.div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
 
       {/* Advanced Health Charts & Correlation Intelligence */}
       <AdvancedAnalytics

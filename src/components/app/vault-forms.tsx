@@ -112,7 +112,7 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={submit} className="card-soft w-full max-w-sm p-7">
+    <form onSubmit={submit} className="card-soft w-full max-w-sm sm:max-w-md p-6 sm:p-8">
       <VaultLogo />
       <CodeInput
         value={code}
@@ -180,7 +180,7 @@ export function SetupForm() {
   }
 
   return (
-    <form onSubmit={submit} className="card-soft w-full max-w-sm p-7">
+    <form onSubmit={submit} className="card-soft w-full max-w-sm sm:max-w-md p-6 sm:p-8">
       <VaultLogo />
       <CodeInput
         value={code}

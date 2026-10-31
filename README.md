@@ -88,6 +88,29 @@ Without Supabase env vars the app transparently falls back to a JSON file store 
 
 ---
 
+## Multi-Device & Viewport Optimization
+
+Our Cycle features an adaptive interface specifically optimized across **Mobile**, **Tablet**, and **Laptop/Desktop** screens:
+
+- **Mobile Viewports (<768px)**:
+  - Ergonomic 1-thumb interaction: bottom navigation bar with safe-area insets (`env(safe-area-inset-bottom)`), active indicators, and haptic feedback.
+  - Smooth bottom sheet drawers (`Drawer`) for day logging and symptom presets.
+  - Swipe gestures for monthly calendar navigation.
+  - Minimum 16px input font sizing preventing unwanted iOS Safari auto-zooming.
+- **Tablet Viewports (768px–1024px)**:
+  - Container expands fluidly to `max-w-4xl px-6`.
+  - Bottom navigation bar hides automatically; sleek frosted top navigation bar appears in the header with active pills and quick link to Doctor Report.
+  - Today view activates a 2-column layout: sticky hero countdown ring on the left, action cards & partner signals on the right.
+  - Calendar day cells expand to `sm:h-12 sm:w-12` with comfortable touch targets.
+  - Insights charts and settings forms adapt to balanced 2-column grids.
+- **Laptop & Desktop Viewports (1024px+)**:
+  - Container expands to `max-w-6xl px-8`.
+  - Executive-level dashboard layouts for both Her View and Partner Care Companion.
+  - Full-width analytics with 2-column chart grids and responsive heights (`h-48 md:h-52`, BBT `h-72`).
+  - Clinical Doctor Report formatted with clean printable sheets and scroll-protected tables.
+
+---
+
 ## Workflow & Pushing Changes to GitHub
 
 > **Core Rule**: After making changes, update all the system markdown files (`README.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `worklog.md`, `CONTRIBUTING.md`) & then push everything to github.

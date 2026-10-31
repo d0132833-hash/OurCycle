@@ -54,7 +54,7 @@ export function BootstrapForm({ today }: { today: string }) {
   }
 
   return (
-    <div className="card-soft p-6">
+    <div className="card-soft p-6 sm:p-8 max-w-xl mx-auto">
       <div className="mb-1 flex items-center gap-2">
         <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
           <Heart className="h-5 w-5 text-primary" fill="currentColor" aria-hidden />

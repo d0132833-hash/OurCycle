@@ -58,7 +58,7 @@ export function CountdownRing({
   }
 
   return (
-    <div className="relative mx-auto h-48 w-48" role="img" aria-label={`${center} ${sub}`}>
+    <div className="relative mx-auto h-48 w-48 sm:h-52 sm:w-52 md:h-56 md:w-56" role="img" aria-label={`${center} ${sub}`}>
       <svg viewBox="0 0 176 176" className="h-full w-full -rotate-90">
         <defs>
           <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -97,8 +97,8 @@ export function CountdownRing({
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-        <span className="font-display text-3xl font-semibold text-primary">{center}</span>
-        <span className="mt-0.5 text-xs text-muted-foreground">{sub}</span>
+        <span className="font-display text-3xl md:text-4xl font-semibold text-primary">{center}</span>
+        <span className="mt-0.5 text-xs md:text-sm text-muted-foreground">{sub}</span>
       </motion.div>
     </div>
   )

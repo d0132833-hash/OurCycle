@@ -316,384 +316,392 @@ export function SettingsView({
   return (
     <div className="space-y-4 pb-4">
       <div>
-        <h2 className="font-display text-xl font-semibold">Settings</h2>
+        <h2 className="font-display text-xl sm:text-2xl font-semibold">Settings</h2>
         <p className="text-sm text-muted-foreground">Your vault, your rules.</p>
       </div>
 
-      {/* Appearance / Theme */}
-      <Card className="card-soft border-0">
-        <CardContent className="p-5">
-          <h3 className="font-display text-base font-semibold">Appearance</h3>
-          <p className="mb-3 text-sm text-muted-foreground">
-            Comfortable viewing day and night.
-          </p>
-          <div className="grid grid-cols-3 gap-2">
-            <Button
-              type="button"
-              variant={activeTheme === 'light' ? 'default' : 'outline'}
-              onClick={() => setTheme('light')}
-              className={`rounded-xl text-xs h-10 ${activeTheme === 'light' ? 'bg-primary text-primary-foreground' : ''}`}
-            >
-              <Sun className="mr-1.5 h-3.5 w-3.5" />
-              Light
-            </Button>
-            <Button
-              type="button"
-              variant={activeTheme === 'dark' ? 'default' : 'outline'}
-              onClick={() => setTheme('dark')}
-              className={`rounded-xl text-xs h-10 ${activeTheme === 'dark' ? 'bg-primary text-primary-foreground' : ''}`}
-            >
-              <Moon className="mr-1.5 h-3.5 w-3.5" />
-              Dark
-            </Button>
-            <Button
-              type="button"
-              variant={activeTheme === 'system' ? 'default' : 'outline'}
-              onClick={() => setTheme('system')}
-              className={`rounded-xl text-xs h-10 ${activeTheme === 'system' ? 'bg-primary text-primary-foreground' : ''}`}
-            >
-              <Monitor className="mr-1.5 h-3.5 w-3.5" />
-              System
-            </Button>
-          </div>
-
-          {/* Color Palettes */}
-          <div className="mt-4 pt-3 border-t border-border/50">
-            <h4 className="text-xs font-semibold text-foreground mb-2">Color Palette</h4>
-            <div className="grid grid-cols-4 gap-2">
-              <button
-                type="button"
-                onClick={() => updatePalette('rose')}
-                className={`flex flex-col items-center gap-1.5 p-2 rounded-xl text-[11px] font-medium border transition-all ${
-                  palette === 'rose'
-                    ? 'border-primary bg-primary/10 text-primary shadow-xs'
-                    : 'border-border bg-stone-50 dark:bg-zinc-800 text-stone-700 dark:text-stone-300'
-                }`}
-              >
-                <span className="h-4 w-4 rounded-full bg-[#E11D48] ring-1 ring-black/10" />
-                <span>Rose</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => updatePalette('lavender')}
-                className={`flex flex-col items-center gap-1.5 p-2 rounded-xl text-[11px] font-medium border transition-all ${
-                  palette === 'lavender'
-                    ? 'border-[#7C3AED] bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 shadow-xs'
-                    : 'border-border bg-stone-50 dark:bg-zinc-800 text-stone-700 dark:text-stone-300'
-                }`}
-              >
-                <span className="h-4 w-4 rounded-full bg-[#7C3AED] ring-1 ring-black/10" />
-                <span>Lavender</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => updatePalette('sage')}
-                className={`flex flex-col items-center gap-1.5 p-2 rounded-xl text-[11px] font-medium border transition-all ${
-                  palette === 'sage'
-                    ? 'border-[#059669] bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 shadow-xs'
-                    : 'border-border bg-stone-50 dark:bg-zinc-800 text-stone-700 dark:text-stone-300'
-                }`}
-              >
-                <span className="h-4 w-4 rounded-full bg-[#059669] ring-1 ring-black/10" />
-                <span>Sage</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => updatePalette('terracotta')}
-                className={`flex flex-col items-center gap-1.5 p-2 rounded-xl text-[11px] font-medium border transition-all ${
-                  palette === 'terracotta'
-                    ? 'border-[#EA580C] bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 shadow-xs'
-                    : 'border-border bg-stone-50 dark:bg-zinc-800 text-stone-700 dark:text-stone-300'
-                }`}
-              >
-                <span className="h-4 w-4 rounded-full bg-[#EA580C] ring-1 ring-black/10" />
-                <span>Terracotta</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Discreet Privacy Disguise Mode */}
-          <div className="mt-4 pt-3 border-t border-border/50 flex items-center justify-between gap-3">
-            <div>
-              <h4 className="text-xs font-semibold text-foreground">Discreet Privacy Mode</h4>
-              <p className="text-[11px] text-muted-foreground mt-0.5 max-w-[240px]">
-                Disguises the app title and headings as a private journal in public spaces.
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+        {/* Left Column: Preferences, Region & Portability */}
+        <div className="space-y-5">
+          {/* Appearance / Theme */}
+          <Card className="card-soft border-0">
+            <CardContent className="p-5">
+              <h3 className="font-display text-base font-semibold">Appearance</h3>
+              <p className="mb-3 text-sm text-muted-foreground">
+                Comfortable viewing day and night.
               </p>
-            </div>
-            <Switch checked={discreet} onCheckedChange={updateDiscreet} aria-label="Toggle discreet mode" />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Cycle length */}
-      <Card className="card-soft border-0">
-        <CardContent className="p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h3 className="font-display text-base font-semibold">Cycle length</h3>
-              <p className="text-sm text-muted-foreground">
-                {overrideOn
-                  ? 'Using a fixed length — learning continues in the background.'
-                  : 'Learned automatically from your logged periods.'}
-              </p>
-            </div>
-            <Switch
-              checked={overrideOn}
-              onCheckedChange={(v) => {
-                setOverrideOn(v)
-                void saveOverride(v, overrideLen)
-              }}
-              aria-label="Use fixed cycle length"
-            />
-          </div>
-
-          {overrideOn ? (
-            <div className="mt-4">
-              <Label className="mb-2 text-sm text-muted-foreground">
-                Fixed cycle length · <span className="text-primary">{overrideLen} days</span>
-              </Label>
-              <Slider
-                value={[overrideLen]}
-                min={21}
-                max={45}
-                step={1}
-                onValueChange={(v) => setOverrideLen(v[0])}
-                onValueCommit={(v) => void saveOverride(true, v[0])}
-                aria-label="Fixed cycle length"
-              />
-              <div className="mt-1 flex justify-between text-[11px] text-muted-foreground">
-                <span>21</span>
-                <span>45</span>
-              </div>
-            </div>
-          ) : null}
-
-          <p className="mt-4 rounded-xl bg-secondary/70 px-3 py-2 text-xs text-secondary-foreground">
-            Auto-learn would predict ~{autoCycleLength ?? '–'} days
-            {sigma !== null ? ` (natural variation ±${sigma.toFixed(1)}d)` : ''} — shown so
-            you can compare any fixed setting against what the model learns.
-          </p>
-          {savingCycle ? <p className="mt-2 text-[11px] text-muted-foreground">Saving…</p> : null}
-        </CardContent>
-      </Card>
-
-      {/* Period History Management */}
-      <Card className="card-soft border-0">
-        <CardContent className="p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-display text-base font-semibold">Period history</h3>
-              <p className="text-sm text-muted-foreground">
-                Review, add, and edit past period records.
-              </p>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setAddStartDate('')
-                setAddEndDate('')
-                setAddFlow('medium')
-                setAddModalOpen(true)
-              }}
-              className="h-8 rounded-xl border-primary/25 bg-white/50 text-xs font-semibold text-primary hover:bg-primary/10 dark:bg-zinc-800/50"
-            >
-              <Plus className="mr-1 h-3.5 w-3.5" />
-              Add period
-            </Button>
-          </div>
-
-          <div className="mt-3 space-y-2 max-h-56 overflow-y-auto pr-1 nice-scroll">
-            {periods.length === 0 ? (
-              <p className="text-xs text-muted-foreground py-2">No periods recorded yet.</p>
-            ) : (
-              [...periods].reverse().map((p) => (
-                <div
-                  key={p.id}
-                  className="flex items-center justify-between rounded-xl border border-border/60 bg-white/40 p-2.5 text-xs dark:bg-zinc-900/40"
+              <div className="grid grid-cols-3 gap-2">
+                <Button
+                  type="button"
+                  variant={activeTheme === 'light' ? 'default' : 'outline'}
+                  onClick={() => setTheme('light')}
+                  className={`rounded-xl text-xs h-10 ${activeTheme === 'light' ? 'bg-primary text-primary-foreground' : ''}`}
                 >
-                  <div>
-                    <span className="font-medium text-foreground">
-                      {p.start_date}
-                    </span>
-                    <span className="text-muted-foreground">
-                      {' → '}{p.end_date ?? 'ongoing'}
-                    </span>
-                    {p.flow ? (
-                      <span className="ml-2 rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] text-rose-700 capitalize dark:bg-rose-950/60 dark:text-rose-300">
-                        {p.flow}
-                      </span>
-                    ) : null}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => openEditModal(p)}
-                      className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground"
-                      aria-label="Edit period"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => setDeleteConfirmId(p.id)}
-                      className="h-7 w-7 rounded-lg text-muted-foreground hover:text-rose-600"
-                      aria-label="Delete period"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                  <Sun className="mr-1.5 h-3.5 w-3.5" />
+                  Light
+                </Button>
+                <Button
+                  type="button"
+                  variant={activeTheme === 'dark' ? 'default' : 'outline'}
+                  onClick={() => setTheme('dark')}
+                  className={`rounded-xl text-xs h-10 ${activeTheme === 'dark' ? 'bg-primary text-primary-foreground' : ''}`}
+                >
+                  <Moon className="mr-1.5 h-3.5 w-3.5" />
+                  Dark
+                </Button>
+                <Button
+                  type="button"
+                  variant={activeTheme === 'system' ? 'default' : 'outline'}
+                  onClick={() => setTheme('system')}
+                  className={`rounded-xl text-xs h-10 ${activeTheme === 'system' ? 'bg-primary text-primary-foreground' : ''}`}
+                >
+                  <Monitor className="mr-1.5 h-3.5 w-3.5" />
+                  System
+                </Button>
+              </div>
+
+              {/* Color Palettes */}
+              <div className="mt-4 pt-3 border-t border-border/50">
+                <h4 className="text-xs font-semibold text-foreground mb-2">Color Palette</h4>
+                <div className="grid grid-cols-4 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => updatePalette('rose')}
+                    className={`flex flex-col items-center gap-1.5 p-2 rounded-xl text-[11px] font-medium border transition-all ${
+                      palette === 'rose'
+                        ? 'border-primary bg-primary/10 text-primary shadow-xs'
+                        : 'border-border bg-stone-50 dark:bg-zinc-800 text-stone-700 dark:text-stone-300'
+                    }`}
+                  >
+                    <span className="h-4 w-4 rounded-full bg-[#E11D48] ring-1 ring-black/10" />
+                    <span>Rose</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updatePalette('lavender')}
+                    className={`flex flex-col items-center gap-1.5 p-2 rounded-xl text-[11px] font-medium border transition-all ${
+                      palette === 'lavender'
+                        ? 'border-[#7C3AED] bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 shadow-xs'
+                        : 'border-border bg-stone-50 dark:bg-zinc-800 text-stone-700 dark:text-stone-300'
+                    }`}
+                  >
+                    <span className="h-4 w-4 rounded-full bg-[#7C3AED] ring-1 ring-black/10" />
+                    <span>Lavender</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updatePalette('sage')}
+                    className={`flex flex-col items-center gap-1.5 p-2 rounded-xl text-[11px] font-medium border transition-all ${
+                      palette === 'sage'
+                        ? 'border-[#059669] bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 shadow-xs'
+                        : 'border-border bg-stone-50 dark:bg-zinc-800 text-stone-700 dark:text-stone-300'
+                    }`}
+                  >
+                    <span className="h-4 w-4 rounded-full bg-[#059669] ring-1 ring-black/10" />
+                    <span>Sage</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updatePalette('terracotta')}
+                    className={`flex flex-col items-center gap-1.5 p-2 rounded-xl text-[11px] font-medium border transition-all ${
+                      palette === 'terracotta'
+                        ? 'border-[#EA580C] bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 shadow-xs'
+                        : 'border-border bg-stone-50 dark:bg-zinc-800 text-stone-700 dark:text-stone-300'
+                    }`}
+                  >
+                    <span className="h-4 w-4 rounded-full bg-[#EA580C] ring-1 ring-black/10" />
+                    <span>Terracotta</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Discreet Privacy Disguise Mode */}
+              <div className="mt-4 pt-3 border-t border-border/50 flex items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-xs font-semibold text-foreground">Discreet Privacy Mode</h4>
+                  <p className="text-[11px] text-muted-foreground mt-0.5 max-w-[240px]">
+                    Disguises the app title and headings as a private journal in public spaces.
+                  </p>
+                </div>
+                <Switch checked={discreet} onCheckedChange={updateDiscreet} aria-label="Toggle discreet mode" />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Timezone */}
+          <Card className="card-soft border-0">
+            <CardContent className="p-5">
+              <h3 className="font-display text-base font-semibold">Timezone</h3>
+              <p className="mb-3 text-sm text-muted-foreground">
+                Used to decide what &ldquo;today&rdquo; means for logging and predictions.
+              </p>
+              <Select value={tz} onValueChange={(v) => void saveTz(v)}>
+                <SelectTrigger className="h-11 w-full rounded-xl border-[rgba(225,29,72,0.2)] bg-white/80 dark:bg-zinc-900/60">
+                  <SelectValue placeholder="Pick a timezone" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIMEZONES.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t.replace('_', ' ')}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {savingTz ? <p className="mt-2 text-[11px] text-muted-foreground">Saving…</p> : null}
+            </CardContent>
+          </Card>
+
+          {/* Data Export */}
+          <Card className="card-soft border-0">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-display text-base font-semibold">Data portability</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Download your complete tracking archive anytime.
+                  </p>
+                </div>
+                <Download className="h-4 w-4 text-primary" />
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-2.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => downloadExport('json')}
+                  className="h-10 rounded-xl text-xs border-[rgba(225,29,72,0.2)]"
+                >
+                  <FileJson className="mr-1.5 h-3.5 w-3.5 text-primary" />
+                  Download JSON
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => downloadExport('csv')}
+                  className="h-10 rounded-xl text-xs border-[rgba(225,29,72,0.2)]"
+                >
+                  <FileSpreadsheet className="mr-1.5 h-3.5 w-3.5 text-primary" />
+                  Download CSV
+                </Button>
+                <a
+                  href="/api/calendar/ics"
+                  download="our-cycle.ics"
+                  className="flex items-center justify-center h-10 rounded-xl text-xs font-medium border border-[rgba(225,29,72,0.2)] bg-card hover:bg-accent text-foreground transition-colors"
+                >
+                  <Calendar className="mr-1.5 h-3.5 w-3.5 text-primary" />
+                  Calendar (.ics)
+                </a>
+                <a
+                  href="/report"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center h-10 rounded-xl text-xs font-medium border border-[rgba(225,29,72,0.2)] bg-card hover:bg-accent text-foreground transition-colors"
+                >
+                  <FileText className="mr-1.5 h-3.5 w-3.5 text-primary" />
+                  Doctor Report (PDF)
+                </a>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Privacy note & Data Reset */}
+          <Card className="card-soft border-0">
+            <CardContent className="p-5 space-y-3">
+              <h3 className="font-display text-base font-semibold">Privacy &amp; Data</h3>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Everything lives in your own vault. No analytics, no trackers, no third-party requests with your data — ever.
+              </p>
+
+              <Button
+                onClick={() => void signOut()}
+                variant="outline"
+                className="h-11 w-full rounded-full border-[rgba(225,29,72,0.3)] text-primary"
+              >
+                Lock the vault (sign out)
+              </Button>
+
+              <Button
+                onClick={() => setResetDialogOpen(true)}
+                variant="ghost"
+                className="h-10 w-full text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/40"
+              >
+                <AlertTriangle className="mr-1.5 h-3.5 w-3.5" />
+                Reset all tracking data
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column: Tracking Engine, History & Security */}
+        <div className="space-y-5">
+          {/* Cycle length */}
+          <Card className="card-soft border-0">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="font-display text-base font-semibold">Cycle length</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {overrideOn
+                      ? 'Using a fixed length — learning continues in the background.'
+                      : 'Learned automatically from your logged periods.'}
+                  </p>
+                </div>
+                <Switch
+                  checked={overrideOn}
+                  onCheckedChange={(v) => {
+                    setOverrideOn(v)
+                    void saveOverride(v, overrideLen)
+                  }}
+                  aria-label="Use fixed cycle length"
+                />
+              </div>
+
+              {overrideOn ? (
+                <div className="mt-4">
+                  <Label className="mb-2 text-sm text-muted-foreground">
+                    Fixed cycle length · <span className="text-primary">{overrideLen} days</span>
+                  </Label>
+                  <Slider
+                    value={[overrideLen]}
+                    min={21}
+                    max={45}
+                    step={1}
+                    onValueChange={(v) => setOverrideLen(v[0])}
+                    onValueCommit={(v) => void saveOverride(true, v[0])}
+                    aria-label="Fixed cycle length"
+                  />
+                  <div className="mt-1 flex justify-between text-[11px] text-muted-foreground">
+                    <span>21</span>
+                    <span>45</span>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              ) : null}
 
-      {/* Timezone (kept as-is per user instruction) */}
-      <Card className="card-soft border-0">
-        <CardContent className="p-5">
-          <h3 className="font-display text-base font-semibold">Timezone</h3>
-          <p className="mb-3 text-sm text-muted-foreground">
-            Used to decide what &ldquo;today&rdquo; means for logging and predictions.
-          </p>
-          <Select value={tz} onValueChange={(v) => void saveTz(v)}>
-            <SelectTrigger className="h-11 w-full rounded-xl border-[rgba(225,29,72,0.2)] bg-white/80 dark:bg-zinc-900/60">
-              <SelectValue placeholder="Pick a timezone" />
-            </SelectTrigger>
-            <SelectContent>
-              {TIMEZONES.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {t.replace('_', ' ')}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {savingTz ? <p className="mt-2 text-[11px] text-muted-foreground">Saving…</p> : null}
-        </CardContent>
-      </Card>
-
-      {/* Data Export */}
-      <Card className="card-soft border-0">
-        <CardContent className="p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-display text-base font-semibold">Data portability</h3>
-              <p className="text-sm text-muted-foreground">
-                Download your complete tracking archive anytime.
+              <p className="mt-4 rounded-xl bg-secondary/70 px-3 py-2 text-xs text-secondary-foreground">
+                Auto-learn would predict ~{autoCycleLength ?? '–'} days
+                {sigma !== null ? ` (natural variation ±${sigma.toFixed(1)}d)` : ''} — shown so
+                you can compare any fixed setting against what the model learns.
               </p>
-            </div>
-            <Download className="h-4 w-4 text-primary" />
-          </div>
-          <div className="mt-4 grid grid-cols-2 gap-2.5">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => downloadExport('json')}
-              className="h-10 rounded-xl text-xs border-[rgba(225,29,72,0.2)]"
-            >
-              <FileJson className="mr-1.5 h-3.5 w-3.5 text-primary" />
-              Download JSON
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => downloadExport('csv')}
-              className="h-10 rounded-xl text-xs border-[rgba(225,29,72,0.2)]"
-            >
-              <FileSpreadsheet className="mr-1.5 h-3.5 w-3.5 text-primary" />
-              Download CSV
-            </Button>
-            <a
-              href="/api/calendar/ics"
-              download="our-cycle.ics"
-              className="flex items-center justify-center h-10 rounded-xl text-xs font-medium border border-[rgba(225,29,72,0.2)] bg-card hover:bg-accent text-foreground transition-colors"
-            >
-              <Calendar className="mr-1.5 h-3.5 w-3.5 text-primary" />
-              Calendar (.ics)
-            </a>
-            <a
-              href="/report"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center h-10 rounded-xl text-xs font-medium border border-[rgba(225,29,72,0.2)] bg-card hover:bg-accent text-foreground transition-colors"
-            >
-              <FileText className="mr-1.5 h-3.5 w-3.5 text-primary" />
-              Doctor Report (PDF)
-            </a>
-          </div>
-        </CardContent>
-      </Card>
+              {savingCycle ? <p className="mt-2 text-[11px] text-muted-foreground">Saving…</p> : null}
+            </CardContent>
+          </Card>
 
-      {/* Vault */}
-      <Card className="card-soft border-0">
-        <CardContent className="p-5">
-          <h3 className="font-display text-base font-semibold">Vault PIN</h3>
-          <p className="mb-4 text-sm text-muted-foreground">
-            Changing your numerical PIN signs out every other device immediately.
-          </p>
-          <RotateForm />
-        </CardContent>
-      </Card>
+          {/* Period History Management */}
+          <Card className="card-soft border-0">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-display text-base font-semibold">Period history</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Review, add, and edit past period records.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setAddStartDate('')
+                    setAddEndDate('')
+                    setAddFlow('medium')
+                    setAddModalOpen(true)
+                  }}
+                  className="h-8 rounded-xl border-primary/25 bg-white/50 text-xs font-semibold text-primary hover:bg-primary/10 dark:bg-zinc-800/50"
+                >
+                  <Plus className="mr-1 h-3.5 w-3.5" />
+                  Add period
+                </Button>
+              </div>
 
-      {/* Install guide */}
-      <Card className="card-soft border-0">
-        <CardContent className="p-5">
-          <h3 className="font-display text-base font-semibold">Install on your phone</h3>
-          <Accordion type="single" collapsible className="mt-2">
-            <AccordionItem value="ios">
-              <AccordionTrigger className="text-sm">iPhone / iPad (Safari)</AccordionTrigger>
-              <AccordionContent className="text-sm text-muted-foreground">
-                Open the site in Safari → tap the <strong>Share</strong> button → scroll and
-                tap <strong>Add to Home Screen</strong> → Add. It opens full-screen like an
-                app and works offline for logging.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="android">
-              <AccordionTrigger className="text-sm">Android (Chrome)</AccordionTrigger>
-              <AccordionContent className="text-sm text-muted-foreground">
-                Open the site in Chrome → tap the <strong>⋮ menu</strong> →{' '}
-                <strong>Add to Home screen</strong> → Install. You can also tap the install
-                banner Chrome shows.
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </CardContent>
-      </Card>
+              <div className="mt-3 space-y-2 max-h-56 overflow-y-auto pr-1 nice-scroll">
+                {periods.length === 0 ? (
+                  <p className="text-xs text-muted-foreground py-2">No periods recorded yet.</p>
+                ) : (
+                  [...periods].reverse().map((p) => (
+                    <div
+                      key={p.id}
+                      className="flex items-center justify-between rounded-xl border border-border/60 bg-white/40 p-2.5 text-xs dark:bg-zinc-900/40"
+                    >
+                      <div>
+                        <span className="font-medium text-foreground">
+                          {p.start_date}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {' → '}{p.end_date ?? 'ongoing'}
+                        </span>
+                        {p.flow ? (
+                          <span className="ml-2 rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] text-rose-700 capitalize dark:bg-rose-950/60 dark:text-rose-300">
+                            {p.flow}
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => openEditModal(p)}
+                          className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground"
+                          aria-label="Edit period"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => setDeleteConfirmId(p.id)}
+                          className="h-7 w-7 rounded-lg text-muted-foreground hover:text-rose-600"
+                          aria-label="Delete period"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-      {/* Privacy note & Data Reset */}
-      <Card className="card-soft border-0">
-        <CardContent className="p-5 space-y-3">
-          <h3 className="font-display text-base font-semibold">Privacy &amp; Data</h3>
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            Everything lives in your own vault. No analytics, no trackers, no third-party requests with your data — ever.
-          </p>
+          {/* Vault */}
+          <Card className="card-soft border-0">
+            <CardContent className="p-5">
+              <h3 className="font-display text-base font-semibold">Vault PIN</h3>
+              <p className="mb-4 text-sm text-muted-foreground">
+                Changing your numerical PIN signs out every other device immediately.
+              </p>
+              <RotateForm />
+            </CardContent>
+          </Card>
 
-          <Button
-            onClick={() => void signOut()}
-            variant="outline"
-            className="h-11 w-full rounded-full border-[rgba(225,29,72,0.3)] text-primary"
-          >
-            Lock the vault (sign out)
-          </Button>
-
-          <Button
-            onClick={() => setResetDialogOpen(true)}
-            variant="ghost"
-            className="h-10 w-full text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/40"
-          >
-            <AlertTriangle className="mr-1.5 h-3.5 w-3.5" />
-            Reset all tracking data
-          </Button>
-        </CardContent>
-      </Card>
+          {/* Install guide */}
+          <Card className="card-soft border-0">
+            <CardContent className="p-5">
+              <h3 className="font-display text-base font-semibold">Install on your phone</h3>
+              <Accordion type="single" collapsible className="mt-2">
+                <AccordionItem value="ios">
+                  <AccordionTrigger className="text-sm">iPhone / iPad (Safari)</AccordionTrigger>
+                  <AccordionContent className="text-sm text-muted-foreground">
+                    Open the site in Safari → tap the <strong>Share</strong> button → scroll and
+                    tap <strong>Add to Home Screen</strong> → Add. It opens full-screen like an
+                    app and works offline for logging.
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="android">
+                  <AccordionTrigger className="text-sm">Android (Chrome)</AccordionTrigger>
+                  <AccordionContent className="text-sm text-muted-foreground">
+                    Open the site in Chrome → tap the <strong>⋮ menu</strong> →{' '}
+                    <strong>Add to Home screen</strong> → Install. You can also tap the install
+                    banner Chrome shows.
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
       {/* Edit Period Dialog */}
       <Dialog open={editingPeriod !== null} onOpenChange={(open) => !open && setEditingPeriod(null)}>
-        <DialogContent className="max-w-xs rounded-2xl">
+        <DialogContent className="w-[92vw] max-w-sm sm:max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle className="font-display text-lg">Edit period</DialogTitle>
             <DialogDescription className="text-xs">
@@ -757,7 +765,7 @@ export function SettingsView({
 
       {/* Add Period Dialog */}
       <Dialog open={addModalOpen} onOpenChange={setAddModalOpen}>
-        <DialogContent className="max-w-xs rounded-2xl">
+        <DialogContent className="w-[92vw] max-w-sm sm:max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle className="font-display text-lg">Add period</DialogTitle>
             <DialogDescription className="text-xs">

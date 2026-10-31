@@ -257,72 +257,79 @@ export function PartnerView({ prediction, todayEntry }: PartnerViewProps) {
 
   return (
     <div className="space-y-4 pt-1">
-      {/* Top Hero Banner */}
-      <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-rose-50/50 to-amber-50/40 p-4.5 dark:from-primary/15 dark:via-zinc-900/60 dark:to-zinc-900/40">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-primary font-semibold text-xs tracking-wide uppercase">
-            <Heart className="h-4 w-4 fill-primary" />
-            <span>Partner Care Companion</span>
+      {/* Top Hero Banner & Social Battery (Grid on tablet/laptop) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+        {/* Top Hero Banner */}
+        <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-rose-50/50 to-amber-50/40 p-4.5 dark:from-primary/15 dark:via-zinc-900/60 dark:to-zinc-900/40 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-primary font-semibold text-xs tracking-wide uppercase">
+                <Heart className="h-4 w-4 fill-primary" />
+                <span>Partner Care Companion</span>
+              </div>
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-primary/15 text-primary">
+                {mindset.mode}
+              </span>
+            </div>
+
+            <h3 className="font-display mt-2 text-lg md:text-xl font-bold text-foreground">
+              {guide.headline}
+            </h3>
+            <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+              {guide.hormoneSummary}
+            </p>
           </div>
-          <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-primary/15 text-primary">
-            {mindset.mode}
-          </span>
+
+          {prediction.nextPeriodStart && (
+            <div className="mt-3.5 flex items-center gap-2 text-xs text-stone-700 dark:text-stone-300 bg-white/70 dark:bg-zinc-800/70 rounded-xl px-3 py-1.5 w-fit border border-border/40">
+              <Calendar className="h-3.5 w-3.5 text-primary" />
+              <span className="font-medium">Forecast:</span>
+              <span>Next period expected ~{fmtShort(prediction.nextPeriodStart)}</span>
+            </div>
+          )}
         </div>
 
-        <h3 className="font-display mt-1.5 text-lg font-bold text-foreground">
-          {guide.headline}
-        </h3>
-        <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-          {guide.hormoneSummary}
-        </p>
+        {/* Social Battery & Capacity Gauge */}
+        <div className="card-soft p-5 space-y-3 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                <Battery className="h-4 w-4 text-emerald-500" />
+                <span>Estimated Energy &amp; Social Battery</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span
+                  className={`text-xs font-bold px-2 py-0.5 rounded-full ${battery.badgeColor}`}
+                >
+                  {battery.label} · {battery.percentage}%
+                </span>
+              </div>
+            </div>
 
-        {prediction.nextPeriodStart && (
-          <div className="mt-3 flex items-center gap-2 text-xs text-stone-700 dark:text-stone-300 bg-white/70 dark:bg-zinc-800/70 rounded-xl px-3 py-1.5 w-fit border border-border/40">
-            <Calendar className="h-3.5 w-3.5 text-primary" />
-            <span className="font-medium">Forecast:</span>
-            <span>Next period expected ~{fmtShort(prediction.nextPeriodStart)}</span>
+            {/* Battery Progress Bar */}
+            <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-stone-100 dark:bg-zinc-800">
+              <div
+                className={`h-full transition-all duration-500 rounded-full ${battery.barColor}`}
+                style={{ width: `${battery.percentage}%` }}
+              />
+            </div>
           </div>
-        )}
-      </div>
 
-      {/* Social Battery & Capacity Gauge */}
-      <div className="card-soft p-4 space-y-2.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
-            <Battery className="h-4 w-4 text-emerald-500" />
-            <span>Estimated Energy & Social Battery</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span
-              className={`text-xs font-bold px-2 py-0.5 rounded-full ${battery.badgeColor}`}
-            >
-              {battery.label} · {battery.percentage}%
-            </span>
-          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            {battery.summary}
+          </p>
         </div>
-
-        {/* Battery Progress Bar */}
-        <div className="h-2.5 w-full overflow-hidden rounded-full bg-stone-100 dark:bg-zinc-800">
-          <div
-            className={`h-full transition-all duration-500 rounded-full ${battery.barColor}`}
-            style={{ width: `${battery.percentage}%` }}
-          />
-        </div>
-
-        <p className="text-[11px] text-muted-foreground leading-relaxed">
-          {battery.summary}
-        </p>
       </div>
 
       {/* Mindset & Communication Golden Rule */}
-      <div className="card-soft p-4 border-l-4 border-l-primary space-y-2">
+      <div className="card-soft p-5 border-l-4 border-l-primary space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs font-semibold text-primary">
             <Compass className="h-4 w-4" />
             <span>{mindset.badgeText}</span>
           </div>
         </div>
-        <h4 className="text-sm font-semibold text-foreground">{mindset.headline}</h4>
+        <h4 className="text-sm md:text-base font-semibold text-foreground">{mindset.headline}</h4>
         <p className="text-xs text-muted-foreground leading-relaxed">
           {mindset.description}
         </p>
@@ -335,80 +342,83 @@ export function PartnerView({ prediction, todayEntry }: PartnerViewProps) {
         </div>
       </div>
 
-      {/* Active Wish / SOS from Her */}
-      {activeSignals.length > 0 && (
-        <div className="card-soft p-4.5 border-l-4 border-l-rose-500 bg-rose-50/40 dark:bg-rose-950/20">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 font-semibold text-xs tracking-wide uppercase">
-              <Heart className="h-4 w-4 fill-rose-500 text-rose-500" />
-              <span>Her Active Wish Right Now</span>
-            </div>
-            <span className="text-[10px] bg-rose-500 text-white font-semibold px-2 py-0.5 rounded-full">
-              Requested Today
-            </span>
-          </div>
-
-          <div className="mt-3 space-y-2.5">
-            {activeSignals.map((sig) => (
-              <div
-                key={sig.key}
-                className="text-xs bg-white/80 dark:bg-zinc-800/80 p-3 rounded-xl border border-rose-200 dark:border-rose-900/50 shadow-sm"
-              >
-                <div className="flex items-center justify-between font-semibold text-foreground text-sm">
-                  <span>{sig.label}</span>
+      {/* Active Wish / SOS from Her & Active Symptoms */}
+      {(activeSignals.length > 0 || activeSymptoms.length > 0) && (
+        <div className={`grid grid-cols-1 ${activeSignals.length > 0 && activeSymptoms.length > 0 ? 'md:grid-cols-2' : ''} gap-4`}>
+          {activeSignals.length > 0 && (
+            <div className="card-soft p-4.5 border-l-4 border-l-rose-500 bg-rose-50/40 dark:bg-rose-950/20">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 font-semibold text-xs tracking-wide uppercase">
+                  <Heart className="h-4 w-4 fill-rose-500 text-rose-500" />
+                  <span>Her Active Wish Right Now</span>
                 </div>
-                <p className="mt-1 text-stone-600 dark:text-stone-300 text-xs leading-normal">
-                  {sig.tip}
-                </p>
-                <div className="mt-2.5 flex items-center gap-2">
-                  <button
-                    onClick={() =>
-                      handleCopyText(
-                        `On it right now! ${sig.label} coming up 💕`,
-                        `sig-${sig.key}`,
-                      )
-                    }
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-500 text-white text-[11px] font-medium hover:bg-rose-600 transition-colors"
+                <span className="text-[10px] bg-rose-500 text-white font-semibold px-2 py-0.5 rounded-full">
+                  Requested Today
+                </span>
+              </div>
+
+              <div className="mt-3 space-y-2.5">
+                {activeSignals.map((sig) => (
+                  <div
+                    key={sig.key}
+                    className="text-xs bg-white/80 dark:bg-zinc-800/80 p-3 rounded-xl border border-rose-200 dark:border-rose-900/50 shadow-sm"
                   >
-                    {copiedId === `sig-${sig.key}` ? (
-                      <Check className="h-3.5 w-3.5" />
-                    ) : (
-                      <MessageCircleHeart className="h-3.5 w-3.5" />
-                    )}
-                    <span>Send &ldquo;On it right now! 💕&rdquo;</span>
-                  </button>
-                </div>
+                    <div className="flex items-center justify-between font-semibold text-foreground text-sm">
+                      <span>{sig.label}</span>
+                    </div>
+                    <p className="mt-1 text-stone-600 dark:text-stone-300 text-xs leading-normal">
+                      {sig.tip}
+                    </p>
+                    <div className="mt-2.5 flex items-center gap-2">
+                      <button
+                        onClick={() =>
+                          handleCopyText(
+                            `On it right now! ${sig.label} coming up 💕`,
+                            `sig-${sig.key}`,
+                          )
+                        }
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-500 text-white text-[11px] font-medium hover:bg-rose-600 transition-colors"
+                      >
+                        {copiedId === `sig-${sig.key}` ? (
+                          <Check className="h-3.5 w-3.5" />
+                        ) : (
+                          <MessageCircleHeart className="h-3.5 w-3.5" />
+                        )}
+                        <span>Send &ldquo;On it right now! 💕&rdquo;</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+            </div>
+          )}
 
-      {/* Active Logged Symptoms Alert */}
-      {activeSymptoms.length > 0 && (
-        <div className="card-soft p-4.5 border-l-4 border-l-amber-500">
-          <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-semibold text-xs tracking-wide uppercase">
-            <AlertCircle className="h-4 w-4" />
-            <span>She Logged Symptoms Today</span>
-          </div>
-          <div className="mt-3 space-y-2.5">
-            {activeSymptoms.map((s, i) => (
-              <div
-                key={i}
-                className="text-xs bg-amber-50/60 dark:bg-amber-950/20 p-2.5 rounded-xl border border-amber-200/60 dark:border-amber-900/40"
-              >
-                <div className="flex items-center justify-between font-medium text-foreground">
-                  <span>{s.name}</span>
-                  <span className="text-[11px] text-muted-foreground font-semibold">
-                    Intensity {s.level}/3
-                  </span>
-                </div>
-                <p className="mt-1 text-stone-600 dark:text-stone-300 leading-normal">
-                  {s.tip}
-                </p>
+          {activeSymptoms.length > 0 && (
+            <div className="card-soft p-4.5 border-l-4 border-l-amber-500">
+              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-semibold text-xs tracking-wide uppercase">
+                <AlertCircle className="h-4 w-4" />
+                <span>She Logged Symptoms Today</span>
               </div>
-            ))}
-          </div>
+              <div className="mt-3 space-y-2.5">
+                {activeSymptoms.map((s, i) => (
+                  <div
+                    key={i}
+                    className="text-xs bg-amber-50/60 dark:bg-amber-950/20 p-2.5 rounded-xl border border-amber-200/60 dark:border-amber-900/40"
+                  >
+                    <div className="flex items-center justify-between font-medium text-foreground">
+                      <span>{s.name}</span>
+                      <span className="text-[11px] text-muted-foreground font-semibold">
+                        Intensity {s.level}/3
+                      </span>
+                    </div>
+                    <p className="mt-1 text-stone-600 dark:text-stone-300 leading-normal">
+                      {s.tip}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -445,92 +455,155 @@ export function PartnerView({ prediction, todayEntry }: PartnerViewProps) {
         </div>
       )}
 
-      {/* Dynamic Caring Text Generator */}
-      <div className="card-soft p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <MessageCircleHeart className="h-4 w-4 text-rose-500" />
-            <h4>Send a Context-Aware Caring Check-in</h4>
-          </div>
-          <span className="text-[11px] text-muted-foreground">1-tap copy & send</span>
-        </div>
-
-        {/* Category Pills */}
-        <div className="flex flex-wrap gap-1.5">
-          {[
-            { id: 'all', label: 'All' },
-            { id: 'comfort', label: 'Pain & Comfort' },
-            { id: 'food_chores', label: 'Food & Chores' },
-            { id: 'affirmation', label: 'Love & Affirmation' },
-            { id: 'fun', label: 'Fun & Dates' },
-          ].map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setActiveTextCategory(cat.id)}
-              className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
-                activeTextCategory === cat.id
-                  ? 'bg-primary text-white shadow-sm'
-                  : 'bg-stone-100 dark:bg-zinc-800 text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Message Cards */}
-        <div className="space-y-2 pt-1">
-          {filteredTexts.map((item) => (
-            <div
-              key={item.id}
-              className="p-3 rounded-xl bg-stone-50/70 dark:bg-zinc-800/60 border border-border/70 text-xs space-y-2 group hover:border-primary/40 transition-all"
-            >
-              <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                <span className="font-semibold uppercase tracking-wider text-primary">
-                  {item.categoryLabel}
-                </span>
-                <span>{item.contextReason}</span>
-              </div>
-              <p className="text-foreground leading-relaxed">&ldquo;{item.text}&rdquo;</p>
-              <div className="flex items-center justify-end gap-2 pt-1 border-t border-border/40">
-                {/* 1-tap SMS link */}
-                <a
-                  href={`sms:?&body=${encodeURIComponent(item.text)}`}
-                  className="flex items-center gap-1 text-[11px] font-medium text-stone-600 dark:text-stone-300 hover:text-primary transition-colors px-2 py-1 rounded-lg hover:bg-stone-100 dark:hover:bg-zinc-700"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  <span>SMS</span>
-                </a>
-                {/* 1-tap WhatsApp link */}
-                <a
-                  href={`https://wa.me/?text=${encodeURIComponent(item.text)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-1 text-[11px] font-medium text-stone-600 dark:text-stone-300 hover:text-emerald-500 transition-colors px-2 py-1 rounded-lg hover:bg-stone-100 dark:hover:bg-zinc-700"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  <span>WhatsApp</span>
-                </a>
-                {/* Copy to clipboard */}
-                <button
-                  onClick={() => handleCopyText(item.text, item.id)}
-                  className="flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors px-2.5 py-1 rounded-lg bg-primary/10"
-                >
-                  {copiedId === item.id ? (
-                    <>
-                      <Check className="h-3 w-3 text-emerald-500" />
-                      <span className="text-emerald-600 dark:text-emerald-400">Copied</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-3 w-3" />
-                      <span>Copy</span>
-                    </>
-                  )}
-                </button>
-              </div>
+      {/* Caring Texts & Grocery Checklist (2-Column on Laptop) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+        {/* Dynamic Caring Text Generator */}
+        <div className="card-soft p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <MessageCircleHeart className="h-4 w-4 text-rose-500" />
+              <h4>Send a Context-Aware Caring Check-in</h4>
             </div>
-          ))}
+            <span className="text-[11px] text-muted-foreground">1-tap copy &amp; send</span>
+          </div>
+
+          {/* Category Pills */}
+          <div className="flex flex-wrap gap-1.5">
+            {[
+              { id: 'all', label: 'All' },
+              { id: 'comfort', label: 'Pain & Comfort' },
+              { id: 'food_chores', label: 'Food & Chores' },
+              { id: 'affirmation', label: 'Love & Affirmation' },
+              { id: 'fun', label: 'Fun & Dates' },
+            ].map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setActiveTextCategory(cat.id)}
+                className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
+                  activeTextCategory === cat.id
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'bg-stone-100 dark:bg-zinc-800 text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Message Cards */}
+          <div className="space-y-2 pt-1 max-h-[460px] overflow-y-auto pr-1 nice-scroll">
+            {filteredTexts.map((item) => (
+              <div
+                key={item.id}
+                className="p-3 rounded-xl bg-stone-50/70 dark:bg-zinc-800/60 border border-border/70 text-xs space-y-2 group hover:border-primary/40 transition-all"
+              >
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                  <span className="font-semibold uppercase tracking-wider text-primary">
+                    {item.categoryLabel}
+                  </span>
+                  <span>{item.contextReason}</span>
+                </div>
+                <p className="text-foreground leading-relaxed">&ldquo;{item.text}&rdquo;</p>
+                <div className="flex items-center justify-end gap-2 pt-1 border-t border-border/40">
+                  {/* 1-tap SMS link */}
+                  <a
+                    href={`sms:?&body=${encodeURIComponent(item.text)}`}
+                    className="flex items-center gap-1 text-[11px] font-medium text-stone-600 dark:text-stone-300 hover:text-primary transition-colors px-2 py-1 rounded-lg hover:bg-stone-100 dark:hover:bg-zinc-700"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    <span>SMS</span>
+                  </a>
+                  {/* 1-tap WhatsApp link */}
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(item.text)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1 text-[11px] font-medium text-stone-600 dark:text-stone-300 hover:text-emerald-500 transition-colors px-2 py-1 rounded-lg hover:bg-stone-100 dark:hover:bg-zinc-700"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    <span>WhatsApp</span>
+                  </a>
+                  {/* Copy to clipboard */}
+                  <button
+                    onClick={() => handleCopyText(item.text, item.id)}
+                    className="flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors px-2.5 py-1 rounded-lg bg-primary/10"
+                  >
+                    {copiedId === item.id ? (
+                      <>
+                        <Check className="h-3 w-3 text-emerald-500" />
+                        <span className="text-emerald-600 dark:text-emerald-400">Copied</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3 w-3" />
+                        <span>Copy</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Smart Care Grocery & Comfort Shopping Checklist */}
+        <div className="card-soft p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <ShoppingCart className="h-4 w-4 text-primary" />
+              <h4>Care &amp; Comfort Shopping Checklist</h4>
+            </div>
+            <button
+              onClick={handleCopyGroceryList}
+              className="flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+            >
+              <Copy className="h-3 w-3" />
+              <span>Copy List</span>
+            </button>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Stock these treats and comfort essentials to support her current phase and symptoms:
+          </p>
+
+          <div className="space-y-1.5 pt-1 max-h-[460px] overflow-y-auto pr-1 nice-scroll">
+            {groceryItems.map((item) => {
+              const isChecked = Boolean(checkedGrocery[item.id])
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => toggleGrocery(item.id)}
+                  className={`flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition-all text-xs ${
+                    isChecked
+                      ? 'border-border/40 bg-stone-100/50 dark:bg-zinc-900/30 opacity-60 line-through'
+                      : item.isUrgent
+                        ? 'border-primary/40 bg-primary/5 dark:bg-primary/10'
+                        : 'border-border/70 bg-stone-50/50 dark:bg-zinc-800/40'
+                  }`}
+                >
+                  <div
+                    className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                      isChecked
+                        ? 'bg-primary border-primary text-white'
+                        : 'border-stone-300 dark:border-zinc-600'
+                    }`}
+                  >
+                    {isChecked && <Check className="h-3 w-3" />}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-1.5 font-medium text-foreground">
+                      <span>{item.name}</span>
+                      {item.isUrgent && !isChecked && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-rose-500 text-white">
+                          Relief
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">{item.reason}</p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
       </div>
 
@@ -539,7 +612,7 @@ export function PartnerView({ prediction, todayEntry }: PartnerViewProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <Sparkles className="h-4 w-4 text-amber-500" />
-            <h4>Phase-Synced Date & Connection Matchmaker</h4>
+            <h4>Phase-Synced Date &amp; Connection Matchmaker</h4>
           </div>
           <span className="text-[11px] text-muted-foreground font-medium">Curated for today</span>
         </div>
@@ -547,26 +620,28 @@ export function PartnerView({ prediction, todayEntry }: PartnerViewProps) {
           Activities matched to her current physical stamina and hormonal strengths:
         </p>
 
-        <div className="space-y-2.5 pt-1">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
           {dateIdeas.map((idea) => (
             <div
               key={idea.id}
-              className="p-3.5 rounded-xl border border-border/70 bg-stone-50/50 dark:bg-zinc-800/40 space-y-2"
+              className="p-3.5 rounded-xl border border-border/70 bg-stone-50/50 dark:bg-zinc-800/40 space-y-2 flex flex-col justify-between"
             >
-              <div className="flex items-center justify-between">
-                <h5 className="font-semibold text-xs text-foreground">{idea.title}</h5>
-                <button
-                  onClick={() => handleCopyText(idea.sampleInvite, idea.id)}
-                  className="flex items-center gap-1 text-[10px] font-semibold text-primary hover:underline"
-                >
-                  {copiedId === idea.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                  <span>Copy Invite</span>
-                </button>
+              <div>
+                <div className="flex items-center justify-between">
+                  <h5 className="font-semibold text-xs text-foreground">{idea.title}</h5>
+                  <button
+                    onClick={() => handleCopyText(idea.sampleInvite, idea.id)}
+                    className="flex items-center gap-1 text-[10px] font-semibold text-primary hover:underline"
+                  >
+                    {copiedId === idea.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                    <span>Copy</span>
+                  </button>
+                </div>
+                <p className="mt-1.5 text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
+                  {idea.description}
+                </p>
               </div>
-              <p className="text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
-                {idea.description}
-              </p>
-              <div className="rounded-lg bg-white/70 dark:bg-zinc-800/70 p-2 text-[11px] text-stone-600 dark:text-stone-400">
+              <div className="mt-2 rounded-lg bg-white/70 dark:bg-zinc-800/70 p-2 text-[11px] text-stone-600 dark:text-stone-400">
                 <strong className="text-foreground font-medium">Why it works: </strong>
                 {idea.whyItWorks}
               </div>
@@ -575,94 +650,37 @@ export function PartnerView({ prediction, todayEntry }: PartnerViewProps) {
         </div>
       </div>
 
-      {/* Smart Care Grocery & Comfort Shopping Checklist */}
-      <div className="card-soft p-5 space-y-3">
-        <div className="flex items-center justify-between">
+      {/* Intimacy & Touch Compass + Mindful Boundaries (2-Column on Tablet/Laptop) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+        {/* Intimacy & Touch Compass */}
+        <div className="card-soft p-5 space-y-2">
           <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <ShoppingCart className="h-4 w-4 text-primary" />
-            <h4>Care & Comfort Shopping Checklist</h4>
+            <Smile className="h-4 w-4 text-primary" />
+            <h4>Intimacy &amp; Physical Touch Compass</h4>
           </div>
-          <button
-            onClick={handleCopyGroceryList}
-            className="flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
-          >
-            <Copy className="h-3 w-3" />
-            <span>Copy List</span>
-          </button>
+          <p className="text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
+            {guide.intimacyAdvice}
+          </p>
         </div>
-        <p className="text-[11px] text-muted-foreground">
-          Stock these treats and comfort essentials to support her current phase and symptoms:
-        </p>
 
-        <div className="space-y-1.5 pt-1">
-          {groceryItems.map((item) => {
-            const isChecked = Boolean(checkedGrocery[item.id])
-            return (
-              <div
-                key={item.id}
-                onClick={() => toggleGrocery(item.id)}
-                className={`flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition-all text-xs ${
-                  isChecked
-                    ? 'border-border/40 bg-stone-100/50 dark:bg-zinc-900/30 opacity-60 line-through'
-                    : item.isUrgent
-                      ? 'border-primary/40 bg-primary/5 dark:bg-primary/10'
-                      : 'border-border/70 bg-stone-50/50 dark:bg-zinc-800/40'
-                }`}
+        {/* What to Avoid & Mindful Boundaries */}
+        <div className="card-soft p-5 space-y-2">
+          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            <h4>What to Be Mindful Of</h4>
+          </div>
+          <ul className="space-y-2 pt-1">
+            {guide.thingsToAvoid.map((avoid, idx) => (
+              <li
+                key={idx}
+                className="flex items-start gap-2 text-xs text-muted-foreground leading-relaxed"
               >
-                <div
-                  className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
-                    isChecked
-                      ? 'bg-primary border-primary text-white'
-                      : 'border-stone-300 dark:border-zinc-600'
-                  }`}
-                >
-                  {isChecked && <Check className="h-3 w-3" />}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-1.5 font-medium text-foreground">
-                    <span>{item.name}</span>
-                    {item.isUrgent && !isChecked && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-rose-500 text-white">
-                        Relief
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">{item.reason}</p>
-                </div>
-              </div>
-            )
-          })}
+                <span className="text-primary font-bold">•</span>
+                <span>{avoid}</span>
+              </li>
+            ))}
+          </ul>
         </div>
-      </div>
-
-      {/* Intimacy & Touch Compass */}
-      <div className="card-soft p-5 space-y-2">
-        <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <Smile className="h-4 w-4 text-primary" />
-          <h4>Intimacy & Physical Touch Compass</h4>
-        </div>
-        <p className="text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
-          {guide.intimacyAdvice}
-        </p>
-      </div>
-
-      {/* What to Avoid & Mindful Boundaries */}
-      <div className="card-soft p-5 space-y-2">
-        <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-          <h4>What to Be Mindful Of</h4>
-        </div>
-        <ul className="space-y-2 pt-1">
-          {guide.thingsToAvoid.map((avoid, idx) => (
-            <li
-              key={idx}
-              className="flex items-start gap-2 text-xs text-muted-foreground leading-relaxed"
-            >
-              <span className="text-primary font-bold">•</span>
-              <span>{avoid}</span>
-            </li>
-          ))}
-        </ul>
       </div>
 
       {/* Discreet Personal Calendar Sync */}

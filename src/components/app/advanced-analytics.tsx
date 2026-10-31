@@ -193,16 +193,16 @@ export function AdvancedAnalytics({ episodes, days, prediction, phaseMap }: Adva
             <p className="text-xs text-muted-foreground mt-0.5">
               Statistically recurring symptom rhythms uncovered from your logs:
             </p>
-            <div className="mt-3 space-y-2.5">
+            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {correlations.map((item, idx) => {
                 const Icon = item.icon
                 return (
-                  <div key={idx} className={`p-3.5 rounded-xl border ${item.tone}`}>
+                  <div key={idx} className={`p-3.5 rounded-xl border ${item.tone} flex flex-col justify-between`}>
                     <div className="flex items-center gap-2 font-semibold text-xs text-foreground">
                       <Icon className="h-4 w-4 shrink-0" />
                       <span>{item.title}</span>
                     </div>
-                    <p className="mt-1 text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
+                    <p className="mt-1.5 text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
                       {item.desc}
                     </p>
                   </div>
@@ -243,7 +243,7 @@ export function AdvancedAnalytics({ episodes, days, prediction, phaseMap }: Adva
           </div>
 
           {healthData.hasBbt ? (
-            <div className="mt-4 h-52 w-full">
+            <div className="mt-4 h-56 md:h-72 lg:h-80 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={healthData.points} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
                   <CartesianGrid strokeDasharray="3 3" opacity={0.15} />

@@ -63,7 +63,7 @@ export function DoctorReport({ episodes, days, prediction }: DoctorReportProps) 
   return (
     <div className="min-h-screen bg-stone-100/70 p-4 sm:p-8 text-foreground print:bg-white print:p-0">
       {/* Action Bar (hidden when printing) */}
-      <div className="mx-auto max-w-3xl mb-6 flex items-center justify-between print:hidden">
+      <div className="mx-auto max-w-3xl lg:max-w-4xl mb-6 flex items-center justify-between print:hidden">
         <Link
           href="/"
           className="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground bg-white dark:bg-zinc-800 px-3.5 py-2 rounded-xl shadow-sm border border-border"
@@ -83,7 +83,7 @@ export function DoctorReport({ episodes, days, prediction }: DoctorReportProps) 
       {/* Printable Sheet */}
       <div
         ref={reportRef}
-        className="mx-auto max-w-3xl bg-white p-8 sm:p-12 shadow-lg rounded-2xl border border-stone-200 print:shadow-none print:border-none print:p-0 print:max-w-none text-stone-900"
+        className="mx-auto max-w-3xl lg:max-w-4xl bg-white p-5 sm:p-8 md:p-12 shadow-lg rounded-2xl border border-stone-200 print:shadow-none print:border-none print:p-0 print:max-w-none text-stone-900"
       >
         {/* Document Header */}
         <div className="border-b-2 border-stone-800 pb-5 mb-6 flex items-start justify-between">
@@ -145,8 +145,8 @@ export function DoctorReport({ episodes, days, prediction }: DoctorReportProps) 
           <h2 className="text-xs font-bold uppercase tracking-wider text-stone-500 mb-2">
             2. Recorded Cycle Episodes (Recent to Oldest)
           </h2>
-          <div className="border border-stone-200 rounded-xl overflow-hidden">
-            <table className="w-full text-xs text-left">
+          <div className="border border-stone-200 rounded-xl overflow-x-auto nice-scroll">
+            <table className="w-full min-w-[540px] text-xs text-left">
               <thead className="bg-stone-100 text-stone-700 font-semibold border-b border-stone-200">
                 <tr>
                   <th className="py-2.5 px-3">Start Date</th>

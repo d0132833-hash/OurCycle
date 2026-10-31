@@ -286,9 +286,9 @@ export function DaySheet({ date, entry, open, onOpenChange }: Props) {
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="mx-auto max-w-md max-h-[92dvh] flex flex-col">
+      <DrawerContent className="mx-auto w-full max-w-lg md:max-w-2xl max-h-[92dvh] flex flex-col md:rounded-t-3xl shadow-2xl border-t border-border/80">
         <DrawerHeader className="shrink-0 pb-2">
-          <DrawerTitle className="font-display text-xl flex items-center justify-between">
+          <DrawerTitle className="font-display text-xl sm:text-2xl flex items-center justify-between">
             <span>{date ? fmtShort(date) : 'Log day'}</span>
             {entry ? (
               <span className="text-xs font-normal px-2.5 py-0.5 rounded-full bg-primary/10 text-primary">
@@ -301,37 +301,37 @@ export function DaySheet({ date, entry, open, onOpenChange }: Props) {
 
         <div className="nice-scroll flex-1 min-h-0 overflow-y-auto px-4 pb-4 space-y-5">
           {/* Quick 1-Tap Presets */}
-          <section className="bg-rose-50/50 dark:bg-zinc-800/40 p-3 rounded-2xl border border-rose-100 dark:border-rose-950/40">
-            <div className="flex items-center gap-1.5 mb-2 text-xs font-semibold text-primary">
+          <section className="bg-rose-50/50 dark:bg-zinc-800/40 p-3.5 rounded-2xl border border-rose-100 dark:border-rose-950/40">
+            <div className="flex items-center gap-1.5 mb-2.5 text-xs font-semibold text-primary">
               <Sparkles className="h-3.5 w-3.5" />
               <span>1-Tap Quick Presets</span>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <button
                 type="button"
                 onClick={() => applyPreset('high-energy')}
-                className="py-1.5 px-2.5 rounded-xl text-left bg-white dark:bg-zinc-800 text-[11px] font-medium border border-border shadow-xs hover:border-primary/40 active:scale-95 transition-all"
+                className="py-2 px-2.5 rounded-xl text-left bg-white dark:bg-zinc-800 text-[11px] font-medium border border-border shadow-2xs hover:border-primary/40 active:scale-95 transition-all"
               >
                 ⚡ High Energy
               </button>
               <button
                 type="button"
                 onClick={() => applyPreset('cramp-rest')}
-                className="py-1.5 px-2.5 rounded-xl text-left bg-white dark:bg-zinc-800 text-[11px] font-medium border border-border shadow-xs hover:border-primary/40 active:scale-95 transition-all"
+                className="py-2 px-2.5 rounded-xl text-left bg-white dark:bg-zinc-800 text-[11px] font-medium border border-border shadow-2xs hover:border-primary/40 active:scale-95 transition-all"
               >
                 🛌 Cramp &amp; Rest
               </button>
               <button
                 type="button"
                 onClick={() => applyPreset('pms-comfort')}
-                className="py-1.5 px-2.5 rounded-xl text-left bg-white dark:bg-zinc-800 text-[11px] font-medium border border-border shadow-xs hover:border-primary/40 active:scale-95 transition-all"
+                className="py-2 px-2.5 rounded-xl text-left bg-white dark:bg-zinc-800 text-[11px] font-medium border border-border shadow-2xs hover:border-primary/40 active:scale-95 transition-all"
               >
                 🌙 PMS Comfort
               </button>
               <button
                 type="button"
                 onClick={() => applyPreset('gentle-reset')}
-                className="py-1.5 px-2.5 rounded-xl text-left bg-white dark:bg-zinc-800 text-[11px] font-medium border border-border shadow-xs hover:border-primary/40 active:scale-95 transition-all"
+                className="py-2 px-2.5 rounded-xl text-left bg-white dark:bg-zinc-800 text-[11px] font-medium border border-border shadow-2xs hover:border-primary/40 active:scale-95 transition-all"
               >
                 🧘 Gentle Reset
               </button>
@@ -399,7 +399,7 @@ export function DaySheet({ date, entry, open, onOpenChange }: Props) {
           {/* Symptoms grid: 0 (none) -> 3 (strong) */}
           <section>
             <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Symptoms</h3>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
               {SYMPTOM_KEYS.map((k) => {
                 const val = draft[k] ?? 0
                 return (
@@ -436,7 +436,7 @@ export function DaySheet({ date, entry, open, onOpenChange }: Props) {
           {/* Lifestyle: Sleep & Hydration */}
           <section>
             <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Sleep &amp; Hydration</h3>
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div className="rounded-xl border border-[rgba(225,29,72,0.16)] bg-white/70 p-3 dark:bg-zinc-900/60">
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground mb-1.5">
                   <Moon className="h-3.5 w-3.5 text-indigo-500" />
@@ -487,7 +487,7 @@ export function DaySheet({ date, entry, open, onOpenChange }: Props) {
           </section>
 
           {/* Temperature & weight */}
-          <section className="grid grid-cols-2 gap-2.5">
+          <section className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <div>
               <label className="mb-1 block text-xs font-semibold text-muted-foreground">
                 BBT temp (°C / °F)

@@ -84,93 +84,103 @@ export function TodayView({ prediction, todayEntry, ongoing }: TodayViewProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.15 }}
-            className="space-y-4"
+            className="grid grid-cols-1 md:grid-cols-12 gap-5 lg:gap-6 items-start"
           >
-            {prediction.irregular ? (
-              <div className="rounded-2xl bg-amber-100/70 px-4 py-2.5 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
-                <span className="font-semibold">Irregular pattern</span> — dates below are ranges.
-                Keep logging and predictions will sharpen.
-              </div>
-            ) : null}
+            {/* Left Column: Countdown ring, status & expectation */}
+            <div className="md:col-span-5 lg:col-span-5 space-y-4 md:sticky md:top-24">
+              {prediction.irregular ? (
+                <div className="rounded-2xl bg-amber-100/70 px-4 py-2.5 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200/50">
+                  <span className="font-semibold">Irregular pattern</span> — dates below are ranges.
+                  Keep logging and predictions will sharpen.
+                </div>
+              ) : null}
 
-            <section className="card-soft p-6 text-center" aria-live="polite">
-              {prediction.isLate ? (
-                <>
-                  <CountdownRing
-                    today={prediction.today}
-                    nextPeriodStart={prediction.nextPeriodStart}
-                    cycleLength={prediction.cycleLength}
-                    bleedingToday={prediction.bleedingToday}
-                    periodDay={prediction.periodDay}
-                    predictedPeriodDuration={prediction.predictedPeriodDuration}
-                    isLate={prediction.isLate}
-                  />
-                  <h2 className="font-display mt-2 text-lg font-semibold">No period logged yet</h2>
-                  <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">
-                    Cycles vary month to month — this happens to everyone sometimes. Whenever
-                    it arrives, log it below and the predictions will re-align.
-                  </p>
-                </>
-              ) : (
-                <>
-                  <CountdownRing
-                    today={prediction.today}
-                    nextPeriodStart={prediction.nextPeriodStart}
-                    cycleLength={prediction.cycleLength}
-                    bleedingToday={prediction.bleedingToday}
-                    periodDay={prediction.periodDay}
-                    predictedPeriodDuration={prediction.predictedPeriodDuration}
-                    isLate={false}
-                  />
-                  <h2 className="font-display mt-2 text-lg font-semibold">{copy?.title}</h2>
-                  {copy ? (
-                    <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">{copy.body}</p>
+              <section className="card-soft p-6 text-center" aria-live="polite">
+                {prediction.isLate ? (
+                  <>
+                    <CountdownRing
+                      today={prediction.today}
+                      nextPeriodStart={prediction.nextPeriodStart}
+                      cycleLength={prediction.cycleLength}
+                      bleedingToday={prediction.bleedingToday}
+                      periodDay={prediction.periodDay}
+                      predictedPeriodDuration={prediction.predictedPeriodDuration}
+                      isLate={prediction.isLate}
+                    />
+                    <h2 className="font-display mt-3 text-lg md:text-xl font-semibold">No period logged yet</h2>
+                    <p className="mx-auto mt-1.5 max-w-xs text-sm text-muted-foreground">
+                      Cycles vary month to month — this happens to everyone sometimes. Whenever
+                      it arrives, log it below and the predictions will re-align.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <CountdownRing
+                      today={prediction.today}
+                      nextPeriodStart={prediction.nextPeriodStart}
+                      cycleLength={prediction.cycleLength}
+                      bleedingToday={prediction.bleedingToday}
+                      periodDay={prediction.periodDay}
+                      predictedPeriodDuration={prediction.predictedPeriodDuration}
+                      isLate={false}
+                    />
+                    <h2 className="font-display mt-3 text-lg md:text-xl font-semibold">{copy?.title}</h2>
+                    {copy ? (
+                      <p className="mx-auto mt-1.5 max-w-xs text-sm text-muted-foreground">{copy.body}</p>
+                    ) : null}
+                  </>
+                )}
+
+                <div className="mt-4 flex flex-wrap justify-center gap-2">
+                  {prediction.nextPeriodStart && !prediction.bleedingToday && !prediction.irregular ? (
+                    <span className="chip text-[#9F1239] dark:text-rose-300">
+                      Next period {fmtShort(prediction.nextPeriodStart)}
+                    </span>
                   ) : null}
-                </>
-              )}
+                  {pms ? (
+                    <span className="chip bg-[#FFF7ED] text-[#9A3412] dark:bg-amber-950/40 dark:text-amber-300">
+                      {pms}
+                    </span>
+                  ) : null}
+                  {fertile ? (
+                    <span className="chip bg-[#FDBA74]/25 text-[#9A3412] dark:bg-amber-950/40 dark:text-amber-300">
+                      {fertile} · estimate
+                    </span>
+                  ) : null}
+                  {prediction.regularity.sigma !== null && !prediction.isLate ? (
+                    <span className="chip text-[#44403C] dark:text-stone-300">
+                      {prediction.regularity.label} · σ {prediction.regularity.sigma.toFixed(1)}d
+                    </span>
+                  ) : null}
+                </div>
 
-              <div className="mt-4 flex flex-wrap justify-center gap-2">
-                {prediction.nextPeriodStart && !prediction.bleedingToday && !prediction.irregular ? (
-                  <span className="chip text-[#9F1239] dark:text-rose-300">
-                    Next period {fmtShort(prediction.nextPeriodStart)}
-                  </span>
-                ) : null}
-                {pms ? (
-                  <span className="chip bg-[#FFF7ED] text-[#9A3412] dark:bg-amber-950/40 dark:text-amber-300">
-                    {pms}
-                  </span>
-                ) : null}
-                {fertile ? (
-                  <span className="chip bg-[#FDBA74]/25 text-[#9A3412] dark:bg-amber-950/40 dark:text-amber-300">
-                    {fertile} · estimate
-                  </span>
-                ) : null}
-                {prediction.regularity.sigma !== null && !prediction.isLate ? (
-                  <span className="chip text-[#44403C] dark:text-stone-300">
-                    {prediction.regularity.label} · σ {prediction.regularity.sigma.toFixed(1)}d
-                  </span>
-                ) : null}
-              </div>
+                <p className="mx-auto mt-4 max-w-xs text-xs leading-relaxed text-muted-foreground">
+                  {expectationLine(prediction)}
+                </p>
+              </section>
 
-              <p className="mx-auto mt-4 max-w-xs text-xs leading-relaxed text-muted-foreground">
-                {expectationLine(prediction)}
+              <p className="hidden md:block px-2 text-center text-[11px] text-muted-foreground">
+                Estimates only — not medical advice, not contraception.
               </p>
-            </section>
+            </div>
 
-            <PeriodActions
-              today={prediction.today}
-              todayEntry={todayEntry}
-              ongoingEpisodeId={ongoing?.id ?? null}
-            />
+            {/* Right Column: Actions, today's log & partner signals */}
+            <div className="md:col-span-7 lg:col-span-7 space-y-4">
+              <PeriodActions
+                today={prediction.today}
+                todayEntry={todayEntry}
+                ongoingEpisodeId={ongoing?.id ?? null}
+              />
 
-            <PartnerSignalShelf
-              today={prediction.today}
-              todayEntry={todayEntry}
-            />
+              <PartnerSignalShelf
+                today={prediction.today}
+                todayEntry={todayEntry}
+              />
 
-            <p className="px-2 pb-2 text-center text-[11px] text-muted-foreground">
-              Estimates only — not medical advice, not contraception.
-            </p>
+              <p className="md:hidden px-2 pb-2 text-center text-[11px] text-muted-foreground">
+                Estimates only — not medical advice, not contraception.
+              </p>
+            </div>
           </motion.div>
         ) : (
           <motion.div

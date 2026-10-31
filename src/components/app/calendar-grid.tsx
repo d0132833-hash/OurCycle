@@ -162,29 +162,29 @@ export function CalendarGrid({ episodes, entries, prediction }: Props) {
 
   return (
     <div
-      className="card-soft p-4 select-none"
+      className="card-soft p-4 sm:p-6 md:p-8 select-none max-w-4xl mx-auto"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => shiftMonth(-1)}
           aria-label="Previous month"
-          className="rounded-full text-muted-foreground transition-transform active:scale-90"
+          className="h-9 w-9 sm:h-10 sm:w-10 md:h-11 md:w-11 rounded-full text-muted-foreground transition-transform active:scale-90"
         >
-          <ChevronLeft className="h-5 w-5" aria-hidden />
+          <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden />
         </Button>
         <div className="text-center">
-          <h2 className="font-display text-lg font-semibold">{MONTH_FMT.format(new Date(`${view}-15T12:00:00Z`))}</h2>
+          <h2 className="font-display text-lg sm:text-xl md:text-2xl font-bold">{MONTH_FMT.format(new Date(`${view}-15T12:00:00Z`))}</h2>
           {prediction.irregular ? (
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-[11px] sm:text-xs text-muted-foreground">
               Irregular pattern — ranges shown. Logging sharpens predictions.
             </p>
           ) : (
-            <p className="text-[10px] text-muted-foreground/80 sm:hidden">Swipe left/right to change month</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground/80 md:hidden">Swipe left/right to change month</p>
           )}
         </div>
         <Button
@@ -192,13 +192,13 @@ export function CalendarGrid({ episodes, entries, prediction }: Props) {
           size="icon"
           onClick={() => shiftMonth(1)}
           aria-label="Next month"
-          className="rounded-full text-muted-foreground transition-transform active:scale-90"
+          className="h-9 w-9 sm:h-10 sm:w-10 md:h-11 md:w-11 rounded-full text-muted-foreground transition-transform active:scale-90"
         >
-          <ChevronRight className="h-5 w-5" aria-hidden />
+          <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden />
         </Button>
       </div>
 
-      <div className="mb-1 grid grid-cols-7 text-center text-[11px] font-medium text-muted-foreground">
+      <div className="mb-2 grid grid-cols-7 text-center text-[11px] sm:text-xs md:text-sm font-semibold text-muted-foreground py-1">
         {WEEKDAYS.map((w) => (
           <span key={w}>{w}</span>
         ))}
@@ -211,7 +211,7 @@ export function CalendarGrid({ episodes, entries, prediction }: Props) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.2 }}
-          className="grid grid-cols-7 gap-y-1"
+          className="grid grid-cols-7 gap-y-1.5 sm:gap-y-2"
         >
           {cells.map((d, i) => {
             if (!d) return <span key={`empty-${i}`} />
@@ -227,26 +227,26 @@ export function CalendarGrid({ episodes, entries, prediction }: Props) {
                   onClick={() => openDay(d)}
                   aria-label={`${fmtShort(d)}${kind === 'period' ? ', period day' : kind === 'predicted' ? ', predicted period' : kind === 'fertile' ? ', fertile window' : ''}`}
                   className={[
-                    'relative flex h-10 w-10 items-center justify-center rounded-full text-sm transition-transform active:scale-95',
-                    kind === 'period' ? 'bg-[#E11D48] font-semibold text-white shadow-[0_4px_10px_rgba(225,29,72,0.35)]' : '',
+                    'relative flex h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 items-center justify-center rounded-2xl text-sm sm:text-base font-medium transition-all active:scale-95',
+                    kind === 'period' ? 'bg-[#E11D48] font-semibold text-white shadow-[0_4px_12px_rgba(225,29,72,0.35)]' : '',
                     kind === 'spotting' ? 'bg-[#FDA4AF]/50 text-[#9F1239] dark:bg-rose-900/50 dark:text-rose-200' : '',
                     kind === 'predicted' ? 'cell-predicted text-primary' : '',
                     kind === 'fertile' ? 'bg-[#FDBA74]/30 text-[#9A3412] dark:bg-amber-950/40 dark:text-amber-200' : '',
-                    kind === 'plain' ? (inFuture ? 'text-muted-foreground' : 'text-foreground') : '',
-                    isToday && kind !== 'period' ? 'ring-2 ring-[#E11D48] ring-offset-1 ring-offset-transparent' : '',
+                    kind === 'plain' ? (inFuture ? 'text-muted-foreground' : 'text-foreground hover:bg-black/5 dark:hover:bg-white/5') : '',
+                    isToday && kind !== 'period' ? 'ring-2 ring-[#E11D48] ring-offset-1 ring-offset-transparent font-bold' : '',
                     isToday && kind === 'period' ? 'ring-2 ring-[#E11D48]/50 ring-offset-1 ring-offset-transparent' : '',
                   ].join(' ')}
                 >
                   {Number(d.slice(8))}
                   {isOvu ? (
                     <span
-                      className="absolute bottom-0.5 h-1.5 w-1.5 rounded-full bg-[#F97316]"
+                      className="absolute bottom-1 sm:bottom-1.5 md:bottom-2 h-1.5 w-1.5 rounded-full bg-[#F97316]"
                       aria-hidden
                     />
                   ) : null}
                   {hasEntry && kind === 'plain' ? (
                     <span
-                      className="absolute bottom-0.5 h-1 w-1 rounded-full bg-[#E11D48]/40"
+                      className="absolute bottom-1 sm:bottom-1.5 md:bottom-2 h-1 w-1 rounded-full bg-[#E11D48]/50"
                       aria-hidden
                     />
                   ) : null}
@@ -257,7 +257,7 @@ export function CalendarGrid({ episodes, entries, prediction }: Props) {
         </motion.div>
       </AnimatePresence>
 
-      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-border/60 pt-3 text-[11px] text-muted-foreground">
+      <div className="mt-6 flex flex-wrap items-center justify-center sm:justify-start gap-x-5 gap-y-2 border-t border-border/60 pt-4 text-[11px] sm:text-xs md:text-sm text-muted-foreground">
         <Legend className="bg-[#E11D48]" label="Period" />
         <Legend className="cell-predicted" label="Predicted" />
         <Legend className="bg-[#FDBA74]/60 dark:bg-amber-700/60" label="Fertile" />
@@ -265,11 +265,11 @@ export function CalendarGrid({ episodes, entries, prediction }: Props) {
         <Legend className="bg-card ring-1 ring-[#E11D48]" label="Today" />
       </div>
 
-      <div className="mt-4 pt-1">
+      <div className="mt-5 pt-1">
         <a
           href="/api/calendar/ics"
           download="our-cycle.ics"
-          className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl text-xs font-semibold bg-stone-100 hover:bg-stone-200/80 dark:bg-zinc-800/80 dark:hover:bg-zinc-800 text-stone-700 dark:text-stone-200 transition-colors border border-border/50"
+          className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl text-xs sm:text-sm font-semibold bg-stone-100 hover:bg-stone-200/80 dark:bg-zinc-800/80 dark:hover:bg-zinc-800 text-stone-700 dark:text-stone-200 transition-colors border border-border/50 shadow-2xs"
         >
           <Calendar className="h-4 w-4 text-primary" />
           <span>Export Forecast to Phone Calendar (.ics)</span>

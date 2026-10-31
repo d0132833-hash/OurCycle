@@ -58,6 +58,11 @@ Our Cycle is a private, two-person cycle tracking Progressive Web Application (P
 └─────────────────────────┘           └─────────────────────────┘
 ```
 
+### F. Responsive Multi-Viewport Architecture
+- **Fluid Shell Boundaries**: Adapts seamlessly from mobile phone widths (`max-w-md`) to iPad/tablet (`max-w-4xl`) and desktop/laptop displays (`max-w-6xl`).
+- **Dual Navigation Flow**: Mobile devices render an ergonomic bottom navigation bar with safe-area support; tablet and laptop viewports automatically hide the bottom bar and elevate navigation to a frosted top header bar with pill active indicators and a Doctor Report shortcut.
+- **Adaptive Multi-Column Views**: Stacks single-column on mobile phones and expands to 2-column or 3-column dashboard grids on tablet and desktop across the Today screen, Partner Care Companion, Insights charts, and Settings console.
+
 ---
 
 ## 2. Core Architectural Pillars
@@ -87,6 +92,11 @@ The application operates against a uniform `Store` interface (`src/lib/storage.t
 - **Argon2id Hashing**: Passphrases and numerical PINs are hashed using OWASP-compliant parameters ($m=19456$, $t=2$, $p=1$) via `@noble/hashes`.
 - **Zero Default Passwords**: There are no hardcoded default passwords or backdoors. Uninitialized vaults automatically enforce first-run onboarding at `/setup`.
 - **Session HMAC & Epoch Rotation**: Session cookies (`oc_session`) carry HMAC-SHA256 signatures with 30-day sliding refresh and an internal `session_epoch`. Rotating the vault PIN bumps the epoch, immediately invalidating all active cookies across all devices.
+
+### F. Responsive Multi-Viewport Architecture
+- **Fluid Shell Boundaries**: Adapts seamlessly from mobile phone widths (`max-w-md`) to iPad/tablet (`max-w-4xl`) and desktop/laptop displays (`max-w-6xl`).
+- **Dual Navigation Flow**: Mobile devices render an ergonomic bottom navigation bar with safe-area support; tablet and laptop viewports automatically hide the bottom bar and elevate navigation to a frosted top header bar with pill active indicators and a Doctor Report shortcut.
+- **Adaptive Multi-Column Views**: Stacks single-column on mobile phones and expands to 2-column or 3-column dashboard grids on tablet and desktop across the Today screen, Partner Care Companion, Insights charts, and Settings console.
 
 ---
 
