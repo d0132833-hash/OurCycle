@@ -7,8 +7,8 @@
  * 24 days in, so the Today screen shows "period expected in ~4 days".
  *
  * Usage:
- *   bun run seed                → local dev store (.data/db.json)
- *   SUPABASE_URL=… SUPABASE_SERVICE_KEY=… bun run seed   → your Supabase project
+ *   npm run seed                → local dev store (.data/db.json)
+ *   SUPABASE_URL=… SUPABASE_SERVICE_KEY=… npm run seed   → your Supabase project
  * If data already exists the script refuses; for Supabase run first:
  *   TRUNCATE period_logs, day_entries, prediction_log;  (SQL editor)
  */
@@ -51,7 +51,7 @@ async function main() {
   if (existing.length > 0) {
     console.error(
       `\nData already exists (${existing.length} periods). Refusing to seed over it.\n` +
-        `For a fresh demo on the LOCAL dev store: rm .data/db.json && bun run seed\n` +
+        `For a fresh demo on the LOCAL dev store: rm .data/db.json && npm run seed\n` +
         `For Supabase: TRUNCATE period_logs, day_entries, prediction_log; then re-run.\n`,
     )
     process.exit(1)

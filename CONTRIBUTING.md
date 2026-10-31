@@ -32,15 +32,15 @@ Our Cycle maintains strict test coverage over its core prediction algorithms, cr
 
 ```bash
 # Run all unit test suites
-bun test
-# or: npx vitest run
+npm test
+# or: bun test
 
 # Run TypeScript typecheck
 npx tsc --noEmit
 
 # Run ESLint validation
-bun run lint
-# or: npm run lint
+npm run lint
+# or: bun run lint
 ```
 
 > **Rule**: Any modification to `src/lib/predictions.ts` must maintain 100% test passing in `tests/predictions.test.ts`.

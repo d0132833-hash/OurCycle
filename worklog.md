@@ -122,3 +122,41 @@ Work Log:
   - Next.js 16 build (`npm run build`): compiled successfully with 0 errors.
 - Updated all system markdown files (`worklog.md`, `CHANGELOG.md`, `README.md`, `ARCHITECTURE.md`).
 - Pushed changes to GitHub remote (`origin main`).
+
+---
+Task ID: 4
+Agent: Antigravity
+Task: Comprehensive codebase cleanup, obsolete scaffold purge, dependency pruning, and repository hygiene.
+
+Work Log:
+- Conducted deep repository audit identifying template leftovers from previous scaffold environments.
+- Purged 100% obsolete non-app directories and files:
+  - Removed `.zscripts/` (12 files including PID tracker, bash build/dev scripts, temporary screenshots).
+  - Removed template test scripts `tests/database-runtime-build.sh`, `tests/python-runtime-build.sh`, and `tests/python-runtime-container.sh`.
+  - Removed `examples/websocket/` (frontend.tsx & server.ts).
+  - Removed `mini-services/` (.gitkeep) and `download/` (README.md).
+  - Removed cloud proxy configuration `Caddyfile`.
+  - Removed unused binary database `db/custom.db`.
+  - Removed unneeded Prisma configuration `prisma/schema.prisma`.
+- Optimized `package.json`:
+  - Renamed package to `our-cycle`.
+  - Cleaned dev/start scripts of POSIX-specific pipe commands (`tee`).
+  - Removed Prisma CLI script entries (`db:push`, `db:generate`, `db:migrate`, `db:reset`).
+  - Added `test:browser` and `test:responsive` convenience runners.
+  - Purged 17 unused packages (`@prisma/client`, `prisma`, `z-ai-web-dev-sdk`, `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`, `@mdxeditor/editor`, `next-auth`, `next-intl`, `react-syntax-highlighter`, `@reactuses/core`, `@tanstack/react-query`, `@tanstack/react-table`, `zustand`, `@hookform/resolvers`, `react-markdown`, `uuid`).
+  - Added `tsx` to devDependencies for direct TypeScript execution (`npm run seed`).
+  - Pruned 350 packages from `node_modules` via `npm install`.
+  - Removed stale `bun.lock` to maintain `package-lock.json` as the single authoritative lockfile.
+- Fixed cross-platform script compatibility:
+  - Fixed Windows URL path bug in `scripts/gen-icons.mjs` using `fileURLToPath` and `path.join`. Verified `npm run icons` succeeds.
+  - Added configurable `CHROME_PATH` support in `scripts/browser-test.mjs` and `scripts/responsive-test.mjs`.
+  - Verified `npm run seed` runs cleanly with `tsx`.
+- Source control & git hygiene:
+  - Untracked 25 binary test screenshots (~6MB) and added `screenshots/` to `.gitignore`.
+  - Added `!.env.example` in `.gitignore` to keep environment variable template tracked.
+- Verification & Testing:
+  - Vitest test suite (`npm test`): 80/80 tests passing (6 test suites).
+  - Next.js production build (`npm run build`): compiled cleanly in Turbopack.
+  - Icon generator (`npm run icons`): generated icons successfully without errors.
+- Updated all system documentation files (`README.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `worklog.md`).
+

@@ -32,9 +32,12 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
+
+.zscripts/
 
 
 # typescript
@@ -55,3 +58,6 @@ server.log
 /skills/
 # our cycle local dev store
 .data/
+
+# test & browser validation screenshots
+screenshots/

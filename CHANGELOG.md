@@ -4,6 +4,41 @@ All notable changes and architectural features introduced to the Our Cycle codeb
 
 ---
 
+## [0.5.0] — 2026-10-31
+
+### 🧹 Repository Cleanup & Scaffolding De-bloat
+
+#### 1. Removed Legacy Template Artifacts
+- Purged container scaffolding and runtime scripts: `.zscripts/` (including stale process PID, runtime bash scripts, and temporary images).
+- Removed unused shell test files from template testing: `tests/database-runtime-build.sh`, `tests/python-runtime-build.sh`, and `tests/python-runtime-container.sh`.
+- Removed template microservice directories and demo apps: `mini-services/`, `examples/websocket/` (frontend & server), and `download/`.
+- Removed reverse-proxy configuration leftover from cloud container sandbox: `Caddyfile`.
+- Purged unneeded SQLite file: `db/custom.db`.
+- Purged unused Prisma configuration: `prisma/schema.prisma` and removed unused Prisma CLI commands (`db:push`, `db:generate`, `db:migrate`, `db:reset`).
+
+#### 2. Dependency Optimization & Modernization (`package.json`)
+- Updated package identity from generic `nextjs_tailwind_shadcn_ts` to `our-cycle`.
+- Removed 17 completely unused boilerplate dependencies:
+  - `@prisma/client`, `prisma`, `z-ai-web-dev-sdk`
+  - `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`
+  - `@mdxeditor/editor`, `next-auth`, `next-intl`, `react-syntax-highlighter`
+  - `@reactuses/core`, `@tanstack/react-query`, `@tanstack/react-table`, `zustand`
+  - `@hookform/resolvers`, `react-markdown`, `uuid`
+- Pruned 350 packages from `node_modules`, dramatically speeding up install times and reducing disk footprint.
+- Added `tsx` to devDependencies for direct TypeScript script execution (`npm run seed`).
+- Removed stale `bun.lock` to establish `package-lock.json` as the single authoritative lockfile.
+
+#### 3. Cross-Platform Script Hardening
+- Fixed Windows file URL path bug in `scripts/gen-icons.mjs` using `fileURLToPath` and `path.join`.
+- Added configurable `CHROME_PATH` environment variable support to `scripts/browser-test.mjs` and `scripts/responsive-test.mjs`.
+- Cleaned npm scripts: simplified `dev` and `start` commands without POSIX-only pipes (`tee`), added `test:browser` and `test:responsive` convenience runners.
+
+#### 4. Gitignore & Source Control Hygiene
+- Removed 25 binary test screenshots (~6MB) from git tracking and added `screenshots/` to `.gitignore`.
+- Exempted `.env.example` in `.gitignore` so environment setup instructions remain tracked for new developers.
+
+---
+
 ## [0.4.0] — 2026-10-31
 
 ### 📱 Responsive Multi-Viewport Overhaul (Mobile, Tablet & Laptop/Desktop)

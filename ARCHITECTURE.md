@@ -119,8 +119,14 @@ OurCycle/
 │   └── lib/                # Pure logic, cryptography, storage adapters, date utilities
 ├── supabase/
 │   └── migration.sql       # Canonical database schema & RLS definitions
-└── tests/                  # Vitest comprehensive unit test suites
+├── scripts/                # Seed script, PWA icon generator, viewport & browser tests
+└── tests/                  # Pure Vitest unit and integration test suites
 ```
+
+### Clean Architecture & Decoupled Tooling
+- **Zero Template Clutter**: Stripped of legacy scaffolding artifacts (`.zscripts`, `Caddyfile`, `prisma/`, `mini-services/`, `examples/`).
+- **Lean Dependency Footprint**: Removed ~350 redundant node modules, focusing strictly on Next.js 16, React 19, Tailwind CSS 4, Radix primitives, Recharts, and Supabase.
+- **Lightweight Source Control**: Test execution screenshots and local data stores are untracked via `.gitignore`, keeping the repository compact and portable.
 
 ---
 

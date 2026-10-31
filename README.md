@@ -64,9 +64,9 @@ It then runs full-screen with an app-shell cache; day logs made offline are queu
 Eight realistic cycles (27–31 days, one 34-day outlier) plus ~8 months of daily logs, so charts, accuracy card and irregular handling are instantly explorable:
 
 ```bash
-bun run seed            # local dev store
+npm run seed            # local dev store (or: bun run seed)
 # or against your Supabase project:
-SUPABASE_URL=… SUPABASE_SERVICE_KEY=… bun run seed
+SUPABASE_URL=… SUPABASE_SERVICE_KEY=… npm run seed
 ```
 
 If data already exists the script refuses; for a fresh run, truncate first (`TRUNCATE period_logs, day_entries, prediction_log;` in the Supabase SQL editor) or delete `.data/db.json` locally.
@@ -76,10 +76,10 @@ If data already exists the script refuses; for a fresh run, truncate first (`TRU
 ## Local development
 
 ```bash
-bun install
-bun run dev        # http://localhost:3000
-bun test           # prediction engine unit tests (vitest)
-bun run lint
+npm install        # or: bun install
+npm run dev        # http://localhost:3000
+npm test           # prediction engine unit tests (vitest)
+npm run lint
 ```
 
 Without Supabase env vars the app transparently falls back to a JSON file store (`.data/db.json`, gitignored) with identical semantics — handy for trying everything without a cloud project. In production the env vars are always present, so that path is dead code.
