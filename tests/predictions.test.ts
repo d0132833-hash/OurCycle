@@ -7,7 +7,7 @@ import {
   madOutlierFlags,
   weightedStats,
 } from '@/lib/predictions'
-import { addDays, diffDays } from '@/lib/dates'
+import { addDays, diffDays, getDaysInMonth } from '@/lib/dates'
 import type { EpisodeInput } from '@/lib/predictions'
 
 const TODAY = '2026-03-15'
@@ -320,5 +320,40 @@ describe('observation derivation', () => {
     ])
     expect(obs.map((o) => o.length)).toEqual([28, 28])
     expect(obs.every((o) => o.status === 'used')).toBe(true)
+  })
+})
+
+describe('calendar date calculations & days-in-month integrity', () => {
+  it('correctly calculates days in month across all months regardless of timezone', () => {
+    // 31-day months (including October)
+    expect(getDaysInMonth('2026-01')).toBe(31)
+    expect(getDaysInMonth('2026-03')).toBe(31)
+    expect(getDaysInMonth('2026-05')).toBe(31)
+    expect(getDaysInMonth('2026-07')).toBe(31)
+    expect(getDaysInMonth('2026-08')).toBe(31)
+    expect(getDaysInMonth('2026-10')).toBe(31) // October 31 must be present!
+    expect(getDaysInMonth('2026-12')).toBe(31)
+
+    // 30-day months
+    expect(getDaysInMonth('2026-04')).toBe(30)
+    expect(getDaysInMonth('2026-06')).toBe(30)
+    expect(getDaysInMonth('2026-09')).toBe(30)
+    expect(getDaysInMonth('2026-11')).toBe(30)
+
+    // February (non-leap vs leap)
+    expect(getDaysInMonth('2026-02')).toBe(28)
+    expect(getDaysInMonth('2028-02')).toBe(29)
+  })
+
+  it('generates all 31 days for October 2026 including October 31', () => {
+    const daysInOct = getDaysInMonth('2026-10')
+    expect(daysInOct).toBe(31)
+    const allOctDays = Array.from(
+      { length: daysInOct },
+      (_, i) => `2026-10-${String(i + 1).padStart(2, '0')}`,
+    )
+    expect(allOctDays.length).toBe(31)
+    expect(allOctDays).toContain('2026-10-31')
+    expect(allOctDays.at(-1)).toBe('2026-10-31')
   })
 })

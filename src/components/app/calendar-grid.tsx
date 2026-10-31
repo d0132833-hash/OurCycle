@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight, Download, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { DayEntry, PeriodEpisode } from '@/lib/types'
 import type { Prediction } from '@/lib/predictions'
-import { addDays } from '@/lib/dates'
+import { addDays, getDaysInMonth } from '@/lib/dates'
 import { DaySheet } from './day-sheet'
 import { fmtShort } from './phase-copy'
 
@@ -26,10 +26,6 @@ const MONTH_FMT = new Intl.DateTimeFormat('en-CA', {
   month: 'long',
   year: 'numeric',
 })
-
-function dayKey(offset: number, iso: string) {
-  return offset === 0 ? iso : addDays(iso, offset)
-}
 
 function triggerHaptic() {
   if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
@@ -67,31 +63,52 @@ export function CalendarGrid({ episodes, entries, prediction }: Props) {
   const marks = useMemo(() => {
     const predicted = new Set<string>()
     const fertile = new Set<string>()
-    if (prediction.nextPeriodStart && prediction.range) {
-      if (prediction.irregular) {
+    const ovu = new Set<string>()
+
+    const dur = prediction.predictedPeriodDuration || 5
+
+    // Current next period prediction
+    if (prediction.nextPeriodStart) {
+      if (prediction.irregular && prediction.range) {
         // σ ≥ 3 → ranges only, never a single predicted date
         for (let d = prediction.range[0]; d <= prediction.range[1]; d = addDays(d, 1))
           predicted.add(d)
       } else {
-        for (let i = 0; i < prediction.predictedPeriodDuration; i++)
+        for (let i = 0; i < dur; i++)
           predicted.add(addDays(prediction.nextPeriodStart, i))
       }
     }
-    // fertile band: this cycle's window plus the next projected one, so the
-    // calendar stays useful mid-cycle (the current window is often already past)
+
+    // Current fertile band & estimated ovulation
     const fwCur = prediction.irregular ? prediction.fertileWindowRange : prediction.fertileWindow
-    const ovu = new Set<string>()
     if (!prediction.irregular && prediction.ovulationDate) ovu.add(prediction.ovulationDate)
     if (fwCur) for (let d = fwCur[0]; d <= fwCur[1]; d = addDays(d, 1)) fertile.add(d)
+
+    // Forward cycle projections (next 3 cycles) so browsing future months stays complete
     if (prediction.nextPeriodStart && prediction.cycleLength) {
       const shift = prediction.cycleLength
-      if (prediction.irregular && fwCur) {
-        for (let d = addDays(fwCur[0], shift); d <= addDays(fwCur[1], shift); d = addDays(d, 1))
-          fertile.add(d)
-      } else if (!prediction.irregular) {
-        const ovu2 = addDays(prediction.nextPeriodStart, shift - 14)
-        for (let d = addDays(ovu2, -5); d <= addDays(ovu2, 1); d = addDays(d, 1)) fertile.add(d)
-        ovu.add(ovu2)
+      for (let c = 1; c <= 3; c++) {
+        const nextStart = addDays(prediction.nextPeriodStart, c * shift)
+
+        if (!prediction.irregular) {
+          for (let i = 0; i < dur; i++) {
+            predicted.add(addDays(nextStart, i))
+          }
+          const ovuDate = addDays(nextStart, -14)
+          ovu.add(ovuDate)
+          for (let d = addDays(ovuDate, -5); d <= addDays(ovuDate, 1); d = addDays(d, 1)) {
+            fertile.add(d)
+          }
+        } else if (prediction.range) {
+          const r0 = addDays(prediction.range[0], c * shift)
+          const r1 = addDays(prediction.range[1], c * shift)
+          for (let d = r0; d <= r1; d = addDays(d, 1)) predicted.add(d)
+          if (fwCur) {
+            for (let d = addDays(fwCur[0], c * shift); d <= addDays(fwCur[1], c * shift); d = addDays(d, 1)) {
+              fertile.add(d)
+            }
+          }
+        }
       }
     }
     return { predicted, fertile, ovu }
@@ -100,13 +117,11 @@ export function CalendarGrid({ episodes, entries, prediction }: Props) {
   const cells = useMemo(() => {
     const first = `${view}-01`
     const lead = new Date(`${first}T12:00:00Z`).getUTCDay() // 0 = Sunday
-    const daysInMonth = new Date(
-      Number(view.slice(0, 4)),
-      Number(view.slice(5, 7)),
-      0,
-    ).getUTCDate()
+    const daysInMonth = getDaysInMonth(view)
     const out: (string | null)[] = Array.from({ length: lead }, () => null)
-    for (let i = 0; i < daysInMonth; i++) out.push(dayKey(i, first))
+    for (let i = 1; i <= daysInMonth; i++) {
+      out.push(`${view}-${String(i).padStart(2, '0')}`)
+    }
     while (out.length % 7 !== 0) out.push(null)
     return out
   }, [view])
@@ -114,8 +129,8 @@ export function CalendarGrid({ episodes, entries, prediction }: Props) {
   function cellKind(d: string): CellKind {
     if (episodeDay.has(d)) return 'period'
     const flow = entryByDate.get(d)?.flow
-    if (flow === 'spotting' || flow === 'light' || flow === 'medium' || flow === 'heavy')
-      return 'spotting'
+    if (flow === 'light' || flow === 'medium' || flow === 'heavy') return 'period'
+    if (flow === 'spotting') return 'spotting'
     if (marks.predicted.has(d)) return 'predicted'
     if (marks.fertile.has(d)) return 'fertile'
     return 'plain'
@@ -130,10 +145,6 @@ export function CalendarGrid({ episodes, entries, prediction }: Props) {
   }
 
   function openDay(d: string) {
-    if (d > today) {
-      toast.info('You can log a day once it begins')
-      return
-    }
     triggerHaptic()
     setSelected(d)
     setOpen(true)
@@ -177,14 +188,29 @@ export function CalendarGrid({ episodes, entries, prediction }: Props) {
         >
           <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden />
         </Button>
-        <div className="text-center">
-          <h2 className="font-display text-lg sm:text-xl md:text-2xl font-bold">{MONTH_FMT.format(new Date(`${view}-15T12:00:00Z`))}</h2>
-          {prediction.irregular ? (
+        <div className="text-center flex flex-col items-center">
+          <h2 className="font-display text-lg sm:text-xl md:text-2xl font-bold">
+            {MONTH_FMT.format(new Date(`${view}-15T12:00:00Z`))}
+          </h2>
+          {view !== today.slice(0, 7) ? (
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic()
+                setView(today.slice(0, 7))
+              }}
+              className="mt-1 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-primary bg-primary/10 hover:bg-primary/20 transition-all cursor-pointer"
+            >
+              <span>Back to Today</span>
+            </button>
+          ) : prediction.irregular ? (
             <p className="text-[11px] sm:text-xs text-muted-foreground">
               Irregular pattern — ranges shown. Logging sharpens predictions.
             </p>
           ) : (
-            <p className="text-[10px] sm:text-xs text-muted-foreground/80 md:hidden">Swipe left/right to change month</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground/80 md:hidden">
+              Swipe left/right to change month
+            </p>
           )}
         </div>
         <Button
@@ -218,35 +244,35 @@ export function CalendarGrid({ episodes, entries, prediction }: Props) {
             const kind = cellKind(d)
             const isToday = d === today
             const hasEntry = entryByDate.has(d)
-            const isOvu = marks.ovu.has(d) && kind === 'plain'
+            const isOvu = marks.ovu.has(d) && (kind === 'fertile' || kind === 'plain')
             const inFuture = d > today
             return (
               <div key={d} className="flex justify-center">
                 <button
                   type="button"
                   onClick={() => openDay(d)}
-                  aria-label={`${fmtShort(d)}${kind === 'period' ? ', period day' : kind === 'predicted' ? ', predicted period' : kind === 'fertile' ? ', fertile window' : ''}`}
+                  aria-label={`${fmtShort(d)}${kind === 'period' ? ', period day' : kind === 'predicted' ? ', predicted period' : kind === 'fertile' ? ', fertile window' : ''}${isOvu ? ', estimated ovulation' : ''}`}
                   className={[
-                    'relative flex h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 items-center justify-center rounded-2xl text-sm sm:text-base font-medium transition-all active:scale-95',
+                    'relative flex h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 items-center justify-center rounded-2xl text-sm sm:text-base font-medium transition-all active:scale-95 cursor-pointer',
                     kind === 'period' ? 'bg-[#E11D48] font-semibold text-white shadow-[0_4px_12px_rgba(225,29,72,0.35)]' : '',
                     kind === 'spotting' ? 'bg-[#FDA4AF]/50 text-[#9F1239] dark:bg-rose-900/50 dark:text-rose-200' : '',
                     kind === 'predicted' ? 'cell-predicted text-primary' : '',
                     kind === 'fertile' ? 'bg-[#FDBA74]/30 text-[#9A3412] dark:bg-amber-950/40 dark:text-amber-200' : '',
                     kind === 'plain' ? (inFuture ? 'text-muted-foreground' : 'text-foreground hover:bg-black/5 dark:hover:bg-white/5') : '',
                     isToday && kind !== 'period' ? 'ring-2 ring-[#E11D48] ring-offset-1 ring-offset-transparent font-bold' : '',
-                    isToday && kind === 'period' ? 'ring-2 ring-[#E11D48]/50 ring-offset-1 ring-offset-transparent' : '',
+                    isToday && kind === 'period' ? 'ring-2 ring-white ring-offset-2 ring-offset-[#E11D48] font-bold' : '',
                   ].join(' ')}
                 >
                   {Number(d.slice(8))}
                   {isOvu ? (
                     <span
-                      className="absolute bottom-1 sm:bottom-1.5 md:bottom-2 h-1.5 w-1.5 rounded-full bg-[#F97316]"
+                      className="absolute bottom-1 sm:bottom-1.5 md:bottom-2 h-1.5 w-1.5 rounded-full bg-[#F97316] ring-1 ring-white/60 dark:ring-black/40"
                       aria-hidden
                     />
                   ) : null}
-                  {hasEntry && kind === 'plain' ? (
+                  {hasEntry && kind !== 'period' && !isOvu ? (
                     <span
-                      className="absolute bottom-1 sm:bottom-1.5 md:bottom-2 h-1 w-1 rounded-full bg-[#E11D48]/50"
+                      className="absolute bottom-1 sm:bottom-1.5 md:bottom-2 h-1 w-1 rounded-full bg-[#E11D48]/70"
                       aria-hidden
                     />
                   ) : null}

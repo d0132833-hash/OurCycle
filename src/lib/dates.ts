@@ -60,3 +60,13 @@ export function dayRange(from: string, to: string): string[] {
 export function clamp(n: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, n))
 }
+
+/**
+ * Returns the exact number of days in the month for a 'YYYY-MM' or 'YYYY-MM-DD' string.
+ * Uses Date.UTC to guarantee timezone-independent accuracy across all user locales.
+ */
+export function getDaysInMonth(yearMonth: string): number {
+  const y = Number(yearMonth.slice(0, 4))
+  const m = Number(yearMonth.slice(5, 7)) // 1-12
+  return new Date(Date.UTC(y, m, 0)).getUTCDate()
+}

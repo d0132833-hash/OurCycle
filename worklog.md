@@ -244,3 +244,28 @@ Work Log:
   - Vitest test suite (`npm test`): 96/96 tests passing across 6 test files.
   - Next.js 16 production build (`npm run build`): compiled cleanly with 0 errors.
 - Updated all system markdown files (`API.md`, `ARCHITECTURE.md`, `README.md`, `worklog.md`).
+
+---
+Task ID: 5
+Agent: Antigravity
+Task: Fix calendar month day-count truncation bug (October 31 missing), ovulation indicator rendering, multi-month forward predictions, and date interactions.
+
+Work Log:
+- Resolved October 31 missing bug in Calendar view:
+  - Root cause: `calendar-grid.tsx` used `new Date(year, month, 0).getUTCDate()`. In timezones east of UTC (e.g. IST +05:30), local midnight on day 0 of month 10 evaluates to Oct 30 18:30:00 UTC, causing `.getUTCDate()` to return 30 instead of 31.
+  - Solution: Implemented `getDaysInMonth(yearMonth)` in `src/lib/dates.ts` using `new Date(Date.UTC(y, m, 0)).getUTCDate()`. This guarantees timezone-independent day calculation across all 12 months (31 days for Oct/Jan/Mar/May/Jul/Aug/Dec, 28/29 for Feb, 30 for Apr/Jun/Sep/Nov).
+- Fixed flow classification in Calendar:
+  - `cellKind` now properly categorizes `light`, `medium`, and `heavy` flow entries as `period` rather than misclassifying non-episode bleeding logs as `spotting`.
+- Fixed Ovulation indicator dot rendering:
+  - Previously `isOvu` required `kind === 'plain'`, but the ovulation day always resides inside the fertile window (`kind === 'fertile'`), which prevented the ovulation marker from ever rendering. Updated condition to `marks.ovu.has(d) && (kind === 'fertile' || kind === 'plain')`.
+- Added multi-month forward cycle projections:
+  - Extended `marks` memo to project upcoming periods, fertile windows, and estimated ovulation 3 cycles forward so browsing forward months remains fully populated.
+- Enhanced calendar day navigation & interaction:
+  - Enabled opening `DaySheet` for any selected date without blocking future/auto-logged dates with a toast message.
+  - Added a "Back to Today" quick jump pill button when browsing months other than the current month.
+  - Enhanced "Today" highlight styling on period days with a prominent high-contrast offset ring.
+- Testing & Verification:
+  - Added unit tests in `tests/predictions.test.ts` validating `getDaysInMonth` across all 12 months, leap year handling, and explicit presence of all 31 days in October 2026.
+  - Vitest test suite (`npm test`): 98/98 tests passing across 6 test files.
+  - Production build (`npm run build`): compiled cleanly with Turbopack and 0 errors.
+- Pushed changes to GitHub remote (`origin main`).
