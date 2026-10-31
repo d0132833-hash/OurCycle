@@ -160,3 +160,29 @@ Work Log:
   - Icon generator (`npm run icons`): generated icons successfully without errors.
 - Updated all system documentation files (`README.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `worklog.md`).
 
+---
+Task ID: 5
+Agent: Antigravity
+Task: Implement custom shopping checklist item addition by Her with bi-directional vault sync & design unique route-tailored loading skeletons for every tab.
+
+Work Log:
+- Implemented Care & Comfort Shopping custom item addition:
+  - Added pure shopping tag helpers to `src/lib/partner-intelligence.ts`: `parseCustomShoppingItems`, `addCustomShoppingTag`, `toggleCustomShoppingTag`, and `removeCustomShoppingTag`.
+  - Stored custom shopping items using the `shop:<name>` (active) and `shop:done:<name>` (checked off) tag protocol in `day_entries.tags`, automatically syncing across partner devices via `/api/days`.
+  - Expanded `tags` array schema in `src/app/api/days/route.ts` from 50 to 100 character items.
+  - Enhanced `src/components/app/partner-signal-shelf.tsx` (Her View on Today screen): added a "Care & Comfort Shopping Wishlist" section with a quick text input, add button, and active items list with status badge ("Waiting for him 💕" vs "Bought by Partner ✓") and 1-tap delete.
+  - Enhanced `src/components/app/partner-view.tsx` (Partner Care Companion): added a direct custom item addition input form, grouped custom requests from her at the top of the checklist under "Requested by Her 💕", enabled check-off toggling and item removal, and updated `handleCopyGroceryList` to include her special requests at the top of clipboard text.
+- Replaced identical countdown ring loading skeleton with unique, tailored skeletons for every tab:
+  - `src/app/(app)/calendar/loading.tsx`: month navigation bar, 7-column weekday headers, 35 day cells with cycle-like rose/peach tints, and legend badge skeletons.
+  - `src/app/(app)/insights/loading.tsx`: model accuracy banner skeleton, and a responsive 2-column chart grid with simulated vertical bars for Cycle Lengths, Sex Drive, Pain & Symptoms, and Flow Shape.
+  - `src/app/(app)/settings/loading.tsx`: 2-column settings console skeleton with theme buttons, timezone dropdown, data export pills, cycle learning switch & slider, period history rows, and vault rotation form.
+  - `src/app/(app)/report/loading.tsx`: clinical summary header, 4 clinical stat cards, and 6-column medical episode history table with striped rows.
+  - `src/app/(app)/loading.tsx`: upgraded default Today skeleton to responsive 12-column grid on tablet/laptop with sticky countdown ring on left and action/signals on right.
+- Testing & Quality Verification:
+  - Vitest test suite (`npm test`): added 5 new unit tests in `tests/partner-intelligence.test.ts` (85/85 tests passing).
+  - TypeScript compiler (`npx tsc --noEmit`): clean with 0 errors.
+  - Next.js production build (`npm run build`): compiled cleanly in Turbopack.
+- Updated all system documentation files (`README.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `worklog.md`).
+- Pushed changes to GitHub remote (`origin main`).
+
+

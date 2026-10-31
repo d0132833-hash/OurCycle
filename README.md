@@ -108,6 +108,8 @@ Our Cycle features an adaptive interface specifically optimized across **Mobile*
   - Executive-level dashboard layouts for both Her View and Partner Care Companion.
   - Full-width analytics with 2-column chart grids and responsive heights (`h-48 md:h-52`, BBT `h-72`).
   - Clinical Doctor Report formatted with clean printable sheets and scroll-protected tables.
+  - Dedicated route-tailored loading skeletons across all views (Calendar month grid, Insights chart dashboard, Settings console, and Clinical summary table).
+  - Integrated Care & Comfort Shopping Wishlist: she can request treats and comfort supplies directly from Her View or inside the Partner Care Companion checklist, with bi-directional vault sync.
 
 ---
 

@@ -127,6 +127,8 @@ OurCycle/
 - **Zero Template Clutter**: Stripped of legacy scaffolding artifacts (`.zscripts`, `Caddyfile`, `prisma/`, `mini-services/`, `examples/`).
 - **Lean Dependency Footprint**: Removed ~350 redundant node modules, focusing strictly on Next.js 16, React 19, Tailwind CSS 4, Radix primitives, Recharts, and Supabase.
 - **Lightweight Source Control**: Test execution screenshots and local data stores are untracked via `.gitignore`, keeping the repository compact and portable.
+- **Per-Route Streaming & Loading Hierarchy**: Route-tailored `loading.tsx` skeletons for `/calendar` (month grid), `/insights` (analytics charts), `/settings` (settings console), and `/report` (clinical sheet) eliminate visual layout jump and replace generic countdown ring skeletons.
+- **Care Shopping Tag Protocol**: Custom shopping items sync transparently across partners via the shared vault using `shop:<name>` (active) and `shop:done:<name>` (checked off) in `day_entries.tags`.
 
 ---
 

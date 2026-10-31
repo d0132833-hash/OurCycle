@@ -706,3 +706,81 @@ export function generateDiscreetCalendarIcs(prediction: Prediction, cycleCount =
   lines.push('END:VCALENDAR')
   return lines.join('\r\n')
 }
+
+// ============================================================================
+// Custom Shopping List Helpers
+// ============================================================================
+
+export interface CustomShoppingItem {
+  id: string
+  name: string
+  isDone: boolean
+  tag: string
+}
+
+/**
+ * Parses tags for custom shopping items added by her or partner.
+ * Tags follow format: 'shop:<item name>' (pending) or 'shop:done:<item name>' (checked off).
+ */
+export function parseCustomShoppingItems(tags?: string[] | null): CustomShoppingItem[] {
+  if (!tags || !Array.isArray(tags)) return []
+  return tags
+    .filter((t) => t.startsWith('shop:'))
+    .map((t) => {
+      const isDone = t.startsWith('shop:done:')
+      const name = isDone ? t.slice('shop:done:'.length) : t.slice('shop:'.length)
+      return {
+        id: t,
+        name,
+        isDone,
+        tag: t,
+      }
+    })
+}
+
+/**
+ * Appends a custom shopping item tag. Sanitizes input and prevents duplicates.
+ */
+export function addCustomShoppingTag(
+  currentTags: string[] | null | undefined,
+  name: string,
+): string[] {
+  const clean = name.trim().replace(/^shop:(done:)?/, '')
+  if (!clean) return currentTags ? [...currentTags] : []
+  const tags = (currentTags ?? []).filter(
+    (t) => t !== `shop:${clean}` && t !== `shop:done:${clean}`,
+  )
+  return [...tags, `shop:${clean}`]
+}
+
+/**
+ * Toggles a custom shopping item between active and done.
+ */
+export function toggleCustomShoppingTag(
+  currentTags: string[] | null | undefined,
+  tag: string,
+): string[] {
+  const tags = currentTags ? [...currentTags] : []
+  const idx = tags.indexOf(tag)
+  if (idx === -1) return tags
+  if (tag.startsWith('shop:done:')) {
+    const rawName = tag.slice('shop:done:'.length)
+    tags[idx] = `shop:${rawName}`
+  } else if (tag.startsWith('shop:')) {
+    const rawName = tag.slice('shop:'.length)
+    tags[idx] = `shop:done:${rawName}`
+  }
+  return tags
+}
+
+/**
+ * Removes a custom shopping item tag completely.
+ */
+export function removeCustomShoppingTag(
+  currentTags: string[] | null | undefined,
+  tag: string,
+): string[] {
+  if (!currentTags) return []
+  return currentTags.filter((t) => t !== tag)
+}
+

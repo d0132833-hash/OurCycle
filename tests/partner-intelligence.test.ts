@@ -7,6 +7,10 @@ import {
   getCareGroceryList,
   generateDiscreetCalendarIcs,
   PARTNER_SIGNALS,
+  parseCustomShoppingItems,
+  addCustomShoppingTag,
+  toggleCustomShoppingTag,
+  removeCustomShoppingTag,
 } from '@/lib/partner-intelligence'
 import type { DayEntry, Phase } from '@/lib/types'
 import { computePredictions } from '@/lib/predictions'
@@ -344,5 +348,62 @@ describe('Partner Intelligence & Empathy Engine', () => {
       expect(body).toContain('Cycle: Rest & Comfort Window')
     })
   })
+
+  // --------------------------------------------------------------------------
+  // 9. Custom Shopping List Helpers
+  // --------------------------------------------------------------------------
+  describe('Custom Shopping List Helpers', () => {
+    it('parses custom shopping items from tags correctly', () => {
+      const tags = ['need:tea', 'shop:Salted caramel gelato', 'shop:done:Heating pads', 'other:tag']
+      const parsed = parseCustomShoppingItems(tags)
+      expect(parsed.length).toBe(2)
+      expect(parsed[0]).toEqual({
+        id: 'shop:Salted caramel gelato',
+        name: 'Salted caramel gelato',
+        isDone: false,
+        tag: 'shop:Salted caramel gelato',
+      })
+      expect(parsed[1]).toEqual({
+        id: 'shop:done:Heating pads',
+        name: 'Heating pads',
+        isDone: true,
+        tag: 'shop:done:Heating pads',
+      })
+    })
+
+    it('returns empty array when no shopping tags or empty array provided', () => {
+      expect(parseCustomShoppingItems(null)).toEqual([])
+      expect(parseCustomShoppingItems([])).toEqual([])
+      expect(parseCustomShoppingItems(['need:tea'])).toEqual([])
+    })
+
+    it('adds custom shopping tag properly', () => {
+      const initial = ['need:tea']
+      const updated = addCustomShoppingTag(initial, 'Iced matcha latte')
+      expect(updated).toEqual(['need:tea', 'shop:Iced matcha latte'])
+
+      // Does not create duplicates
+      const dup = addCustomShoppingTag(updated, 'Iced matcha latte')
+      expect(dup).toEqual(['need:tea', 'shop:Iced matcha latte'])
+    })
+
+    it('toggles custom shopping tag between active and done', () => {
+      const initial = ['need:tea', 'shop:Chocolate bar']
+      const toggledToDone = toggleCustomShoppingTag(initial, 'shop:Chocolate bar')
+      expect(toggledToDone).toContain('shop:done:Chocolate bar')
+      expect(toggledToDone).not.toContain('shop:Chocolate bar')
+
+      const toggledBack = toggleCustomShoppingTag(toggledToDone, 'shop:done:Chocolate bar')
+      expect(toggledBack).toContain('shop:Chocolate bar')
+      expect(toggledBack).not.toContain('shop:done:Chocolate bar')
+    })
+
+    it('removes custom shopping tag', () => {
+      const initial = ['need:tea', 'shop:Chocolate bar', 'shop:done:Tea']
+      const removed = removeCustomShoppingTag(initial, 'shop:Chocolate bar')
+      expect(removed).toEqual(['need:tea', 'shop:done:Tea'])
+    })
+  })
 })
+
 

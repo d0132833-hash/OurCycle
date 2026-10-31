@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Heart,
   Sparkles,
@@ -19,6 +20,8 @@ import {
   Compass,
   Info,
   ExternalLink,
+  Plus,
+  Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { DayEntry, Phase } from '@/lib/types'
@@ -31,6 +34,10 @@ import {
   getPhaseDateIdeas,
   getCareGroceryList,
   PARTNER_SIGNALS,
+  parseCustomShoppingItems,
+  addCustomShoppingTag,
+  toggleCustomShoppingTag,
+  removeCustomShoppingTag,
   type DynamicText,
   type GroceryItem,
 } from '@/lib/partner-intelligence'
@@ -126,10 +133,22 @@ function triggerHaptic() {
   }
 }
 
-export function PartnerView({ prediction, todayEntry }: PartnerViewProps) {
+export function PartnerView({ prediction, todayEntry, today }: PartnerViewProps) {
+  const router = useRouter()
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [activeTextCategory, setActiveTextCategory] = useState<string>('all')
   const [checkedGrocery, setCheckedGrocery] = useState<Record<string, boolean>>({})
+  const [customItemInput, setCustomItemInput] = useState('')
+  const [isAddingItem, setIsAddingItem] = useState(false)
+
+  const currentTags = todayEntry?.tags ?? []
+  const [localTags, setLocalTags] = useState<string[]>(currentTags)
+
+  useEffect(() => {
+    setLocalTags(todayEntry?.tags ?? [])
+  }, [todayEntry?.tags])
+
+  const customItems = useMemo(() => parseCustomShoppingItems(localTags), [localTags])
 
   const phase: Phase = prediction.todayPhase || 'follicular'
   const guide = PARTNER_PHASE_GUIDE[phase]
@@ -168,8 +187,7 @@ export function PartnerView({ prediction, todayEntry }: PartnerViewProps) {
   )
 
   // Detect active signals from her
-  const currentTags = todayEntry?.tags ?? []
-  const activeSignals = PARTNER_SIGNALS.filter((s) => currentTags.includes(s.key))
+  const activeSignals = PARTNER_SIGNALS.filter((s) => localTags.includes(s.key))
 
   // Detect active symptoms logged today
   const activeSymptoms: { name: string; level: number; tip: string }[] = []
@@ -231,22 +249,120 @@ export function PartnerView({ prediction, todayEntry }: PartnerViewProps) {
     }
   }
 
-  // Toggle grocery item
+  // Toggle built-in grocery item
   const toggleGrocery = (id: string) => {
     triggerHaptic()
     setCheckedGrocery((prev) => ({ ...prev, [id]: !prev[id] }))
   }
 
-  // Copy remaining shopping items
+  // Add custom shopping item
+  const handleAddCustomItem = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    const trimmed = customItemInput.trim()
+    if (!trimmed) return
+    if (trimmed.length > 80) {
+      toast.error('Item name must be 80 characters or fewer')
+      return
+    }
+    setIsAddingItem(true)
+    triggerHaptic()
+    const newTags = addCustomShoppingTag(localTags, trimmed)
+    setLocalTags(newTags)
+    setCustomItemInput('')
+
+    try {
+      const res = await fetch('/api/days', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: today,
+          tags: newTags,
+        }),
+      })
+      if (!res.ok) throw new Error('Could not add item')
+      toast.success(`Added "${trimmed}" to checklist 💕`)
+      router.refresh()
+    } catch {
+      setLocalTags(currentTags)
+      toast.error('Failed to add item to checklist')
+    } finally {
+      setIsAddingItem(false)
+    }
+  }
+
+  // Toggle custom shopping item
+  const handleToggleCustomItem = async (tag: string) => {
+    triggerHaptic()
+    const newTags = toggleCustomShoppingTag(localTags, tag)
+    setLocalTags(newTags)
+
+    try {
+      const res = await fetch('/api/days', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: today,
+          tags: newTags,
+        }),
+      })
+      if (!res.ok) throw new Error('Could not toggle item')
+      router.refresh()
+    } catch {
+      setLocalTags(currentTags)
+      toast.error('Failed to update item state')
+    }
+  }
+
+  // Remove custom shopping item
+  const handleRemoveCustomItem = async (tag: string, name: string) => {
+    triggerHaptic()
+    const newTags = removeCustomShoppingTag(localTags, tag)
+    setLocalTags(newTags)
+
+    try {
+      const res = await fetch('/api/days', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: today,
+          tags: newTags,
+        }),
+      })
+      if (!res.ok) throw new Error('Could not remove item')
+      toast.info(`Removed "${name}" from checklist`)
+      router.refresh()
+    } catch {
+      setLocalTags(currentTags)
+      toast.error('Failed to remove item')
+    }
+  }
+
+  // Copy remaining shopping items (both custom and curated)
   const handleCopyGroceryList = async () => {
     triggerHaptic()
-    const remaining = groceryItems.filter((item) => !checkedGrocery[item.id])
-    if (remaining.length === 0) {
+    const remainingCustom = customItems.filter((item) => !item.isDone)
+    const remainingBuiltIn = groceryItems.filter((item) => !checkedGrocery[item.id])
+
+    if (remainingCustom.length === 0 && remainingBuiltIn.length === 0) {
       toast.info('All items checked off!')
       return
     }
-    const textList = remaining.map((i) => `• ${i.name} (${i.reason})`).join('\n')
-    const fullText = `🛒 Care Shopping List for ${guide.headline}:\n${textList}`
+
+    const sections: string[] = []
+    if (remainingCustom.length > 0) {
+      sections.push(
+        `🌟 Special Requests from Her:\n` +
+          remainingCustom.map((i) => `• ${i.name} (Her Wish 💕)`).join('\n'),
+      )
+    }
+    if (remainingBuiltIn.length > 0) {
+      sections.push(
+        `🛒 Curated Comfort Essentials (${guide.headline}):\n` +
+          remainingBuiltIn.map((i) => `• ${i.name} (${i.reason})`).join('\n'),
+      )
+    }
+
+    const fullText = sections.join('\n\n')
     try {
       await navigator.clipboard.writeText(fullText)
       toast.success('Copied shopping list to clipboard!')
@@ -547,7 +663,7 @@ export function PartnerView({ prediction, todayEntry }: PartnerViewProps) {
         </div>
 
         {/* Smart Care Grocery & Comfort Shopping Checklist */}
-        <div className="card-soft p-5 space-y-3">
+        <div className="card-soft p-5 space-y-3.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <ShoppingCart className="h-4 w-4 text-primary" />
@@ -562,47 +678,135 @@ export function PartnerView({ prediction, todayEntry }: PartnerViewProps) {
             </button>
           </div>
           <p className="text-[11px] text-muted-foreground">
-            Stock these treats and comfort essentials to support her current phase and symptoms:
+            Stock treats and comfort essentials tailored to her phase, or add custom requests:
           </p>
 
-          <div className="space-y-1.5 pt-1 max-h-[460px] overflow-y-auto pr-1 nice-scroll">
-            {groceryItems.map((item) => {
-              const isChecked = Boolean(checkedGrocery[item.id])
-              return (
-                <div
-                  key={item.id}
-                  onClick={() => toggleGrocery(item.id)}
-                  className={`flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition-all text-xs ${
-                    isChecked
-                      ? 'border-border/40 bg-stone-100/50 dark:bg-zinc-900/30 opacity-60 line-through'
-                      : item.isUrgent
-                        ? 'border-primary/40 bg-primary/5 dark:bg-primary/10'
-                        : 'border-border/70 bg-stone-50/50 dark:bg-zinc-800/40'
-                  }`}
-                >
+          {/* Quick Add Custom Item Form */}
+          <form onSubmit={handleAddCustomItem} className="flex gap-1.5 pt-0.5">
+            <input
+              type="text"
+              value={customItemInput}
+              onChange={(e) => setCustomItemInput(e.target.value)}
+              placeholder="Add comfort treat (e.g. Gelato, heating patch)..."
+              maxLength={80}
+              className="flex-1 text-xs px-3 py-2 rounded-xl border border-border/80 bg-stone-50/70 dark:bg-zinc-800/70 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+            <button
+              type="submit"
+              disabled={isAddingItem || !customItemInput.trim()}
+              className="px-3 py-2 text-xs font-medium bg-primary text-white rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 flex items-center gap-1 shadow-sm shrink-0"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>Add</span>
+            </button>
+          </form>
+
+          <div className="space-y-2 pt-1 max-h-[460px] overflow-y-auto pr-1 nice-scroll">
+            {/* Custom items added by her / partner */}
+            {customItems.length > 0 && (
+              <div className="space-y-1.5 pb-2 border-b border-border/50">
+                <div className="flex items-center justify-between text-[10px] font-semibold tracking-wider uppercase text-primary px-0.5">
+                  <span className="flex items-center gap-1">
+                    <Heart className="h-3 w-3 fill-primary" />
+                    <span>Requested by Her ({customItems.length})</span>
+                  </span>
+                </div>
+                {customItems.map((item) => (
                   <div
-                    className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
-                      isChecked
-                        ? 'bg-primary border-primary text-white'
-                        : 'border-stone-300 dark:border-zinc-600'
+                    key={item.id}
+                    className={`flex items-start justify-between gap-2.5 p-2.5 rounded-xl border transition-all text-xs ${
+                      item.isDone
+                        ? 'border-border/40 bg-stone-100/50 dark:bg-zinc-900/30 opacity-60'
+                        : 'border-primary/30 bg-primary/5 dark:bg-primary/10'
                     }`}
                   >
-                    {isChecked && <Check className="h-3 w-3" />}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-1.5 font-medium text-foreground">
-                      <span>{item.name}</span>
-                      {item.isUrgent && !isChecked && (
-                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-rose-500 text-white">
-                          Relief
-                        </span>
-                      )}
+                    <div
+                      onClick={() => handleToggleCustomItem(item.tag)}
+                      className="flex items-start gap-2.5 flex-1 cursor-pointer"
+                    >
+                      <div
+                        className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                          item.isDone
+                            ? 'bg-primary border-primary text-white'
+                            : 'border-stone-300 dark:border-zinc-600'
+                        }`}
+                      >
+                        {item.isDone && <Check className="h-3 w-3" />}
+                      </div>
+                      <div className="flex-1">
+                        <div
+                          className={`flex items-center gap-1.5 font-medium ${
+                            item.isDone ? 'line-through text-muted-foreground' : 'text-foreground'
+                          }`}
+                        >
+                          <span>{item.name}</span>
+                          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-rose-500 text-white">
+                            Her Wish 💕
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {item.isDone ? 'Checked off ✓' : 'Direct request from her today'}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">{item.reason}</p>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveCustomItem(item.tag, item.name)}
+                      className="text-muted-foreground hover:text-rose-500 transition-colors p-1"
+                      title="Remove item"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   </div>
+                ))}
+              </div>
+            )}
+
+            {/* Curated biological essentials */}
+            <div className="space-y-1.5">
+              {customItems.length > 0 && (
+                <div className="text-[10px] font-semibold tracking-wider uppercase text-muted-foreground px-0.5 pt-1">
+                  <span>Curated Phase Essentials</span>
                 </div>
-              )
-            })}
+              )}
+              {groceryItems.map((item) => {
+                const isChecked = Boolean(checkedGrocery[item.id])
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => toggleGrocery(item.id)}
+                    className={`flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition-all text-xs ${
+                      isChecked
+                        ? 'border-border/40 bg-stone-100/50 dark:bg-zinc-900/30 opacity-60 line-through'
+                        : item.isUrgent
+                          ? 'border-primary/40 bg-primary/5 dark:bg-primary/10'
+                          : 'border-border/70 bg-stone-50/50 dark:bg-zinc-800/40'
+                    }`}
+                  >
+                    <div
+                      className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                        isChecked
+                          ? 'bg-primary border-primary text-white'
+                          : 'border-stone-300 dark:border-zinc-600'
+                      }`}
+                    >
+                      {isChecked && <Check className="h-3 w-3" />}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-1.5 font-medium text-foreground">
+                        <span>{item.name}</span>
+                        {item.isUrgent && !isChecked && (
+                          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-rose-500 text-white">
+                            Relief
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{item.reason}</p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
       </div>

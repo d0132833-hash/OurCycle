@@ -4,6 +4,40 @@ All notable changes and architectural features introduced to the Our Cycle codeb
 
 ---
 
+## [0.6.0] — 2026-10-31
+
+### 🛒 Custom Shopping Checklist by Her & 🎨 Route-Tailored Loading Skeletons
+
+#### 1. Custom Items in Care & Comfort Shopping Checklist
+- **Direct Addition in Her View (`partner-signal-shelf.tsx`)**:
+  - Added a dedicated "Care & Comfort Shopping Wishlist" input directly below her 1-tap signals on Today view.
+  - She can type any treat, comfort snack, or supply (e.g. "Salted caramel gelato", "Extra heating patches", "Iced matcha").
+  - Displays her active requested shopping items with a "Waiting for him 💕" status badge and a 1-tap delete button.
+- **Direct Addition in Partner Care View (`partner-view.tsx`)**:
+  - Added an intuitive "Add custom comfort item" form directly in the "Care & Comfort Shopping Checklist" card.
+  - Items requested by her appear highlighted at the top under a `"Requested by Her 💕"` section with custom checkboxes and delete controls.
+- **Bi-directional Vault Sync & Copy List**:
+  - Custom shopping items are serialized with the `shop:<name>` and `shop:done:<name>` tag convention in `day_entries.tags`, syncing across devices via the shared vault API (`/api/days`).
+  - Increased `tags` validation max string length in `src/app/api/days/route.ts` from 50 to 100 characters to safely support descriptive treat names.
+  - Enhanced `handleCopyGroceryList`: Clipboard export cleanly groups `🌟 Special Requests from Her:` at the top followed by `🛒 Curated Comfort Essentials:`.
+- **Pure Intelligence Helpers (`partner-intelligence.ts`)**:
+  - Added pure helpers: `parseCustomShoppingItems`, `addCustomShoppingTag`, `toggleCustomShoppingTag`, and `removeCustomShoppingTag`.
+  - Added 5 comprehensive Vitest unit tests verifying parsing, duplicate prevention, active/done toggling, and tag removal (85/85 tests passing).
+
+#### 2. Unique Route-Tailored Loading Skeletons for Every Tab
+- **Calendar Skeleton (`src/app/(app)/calendar/loading.tsx`)**:
+  - Replaced the countdown ring placeholder with an authentic month calendar skeleton: month navigation bar, 7-column weekday headers, 35 day cells with cycle-like rose/peach tints, and legend badge skeletons.
+- **Insights Skeleton (`src/app/(app)/insights/loading.tsx`)**:
+  - Replaced the countdown ring with a full analytics dashboard skeleton: accuracy banner, and a 2-column responsive chart grid with simulated vertical bars for Cycle Lengths, Sex Drive by Phase, Pain & Symptoms by Phase, and Flow Shape.
+- **Settings Skeleton (`src/app/(app)/settings/loading.tsx`)**:
+  - Replaced the countdown ring with a 2-column settings console skeleton: appearance buttons, timezone dropdown, data export pills, cycle learning switch & slider, period history rows, and vault rotation form.
+- **Doctor Report Skeleton (`src/app/(app)/report/loading.tsx`)**:
+  - Added a clinical summary skeleton: report header with medical badge, 4 clinical stat cards, and a 6-column medical episode history table with striped rows.
+- **Today Skeleton (`src/app/(app)/loading.tsx`)**:
+  - Upgraded the default/Today skeleton to be fully responsive (`max-w-md md:max-w-4xl lg:max-w-6xl`), featuring the sticky countdown ring on the left (5 cols) and action/preview/signals skeleton on the right (7 cols) on tablet and laptop viewports.
+
+---
+
 ## [0.5.0] — 2026-10-31
 
 ### 🧹 Repository Cleanup & Scaffolding De-bloat
