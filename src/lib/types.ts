@@ -70,6 +70,8 @@ export interface AppSettings {
   timezone: string
   /** cold-start prior from bootstrap form; null once enough real cycles exist */
   bootstrap_cycle_length: number | null
+  /** default period duration in days (e.g. 5 days, range 1-14) */
+  period_length?: number | null
 }
 
 export interface AppSecretRow {

@@ -28,6 +28,7 @@ const DEFAULT_DB: DatabaseSchema = {
     cycle_length_override: null,
     timezone: 'Asia/Calcutta',
     bootstrap_cycle_length: null,
+    period_length: 5,
   },
   periods: [],
   days: {},
@@ -249,7 +250,9 @@ export class LocalFileStore implements Store {
   }
 
   async updateSettings(
-    patch: Partial<Pick<AppSettings, 'cycle_length_override' | 'timezone' | 'bootstrap_cycle_length'>>,
+    patch: Partial<
+      Pick<AppSettings, 'cycle_length_override' | 'timezone' | 'bootstrap_cycle_length' | 'period_length'>
+    >,
   ): Promise<AppSettings> {
     const db = this.read()
     db.settings = { ...db.settings, ...patch }

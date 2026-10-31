@@ -202,10 +202,15 @@ export class SupabaseStore implements Store {
       .eq('id', 1)
       .maybeSingle()
     if (error) throw error
-    if (data) return data as AppSettings
+    if (data) {
+      return {
+        ...data,
+        period_length: data.period_length ?? 5,
+      } as AppSettings
+    }
     const { data: created, error: insErr } = await this.sb
       .from('settings')
-      .upsert({ id: 1, cycle_length_override: null, timezone: 'Asia/Calcutta' })
+      .upsert({ id: 1, cycle_length_override: null, timezone: 'Asia/Calcutta', period_length: 5 })
       .select('*')
       .single()
     if (insErr) throw insErr
@@ -213,7 +218,9 @@ export class SupabaseStore implements Store {
   }
 
   async updateSettings(
-    patch: Partial<Pick<AppSettings, 'cycle_length_override' | 'timezone' | 'bootstrap_cycle_length'>>,
+    patch: Partial<
+      Pick<AppSettings, 'cycle_length_override' | 'timezone' | 'bootstrap_cycle_length' | 'period_length'>
+    >,
   ): Promise<AppSettings> {
     await this.getSettings() // ensure row
     const { data, error } = await this.sb

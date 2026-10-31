@@ -15,7 +15,10 @@ const DATE_FMT = new Intl.DateTimeFormat('en-CA', {
 
 export default async function TodayPage() {
   const store = getStore()
-  const prediction = await computeCurrentPrediction()
+  const [prediction, settings] = await Promise.all([
+    computeCurrentPrediction(),
+    store.getSettings(),
+  ])
   const todayEntry = (await store.listDays(prediction.today, prediction.today)).at(0) ?? null
 
   if (!prediction.hasEpisodes) {
@@ -46,6 +49,7 @@ export default async function TodayPage() {
       prediction={prediction}
       todayEntry={todayEntry}
       ongoing={ongoing}
+      periodLength={settings.period_length ?? prediction.predictedPeriodDuration ?? 5}
     />
   )
 }

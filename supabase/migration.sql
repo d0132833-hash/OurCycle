@@ -69,7 +69,8 @@ create table if not exists settings (
   cycle_length_override int check (cycle_length_override between 21 and 45),
   timezone text default 'Asia/Calcutta',
   -- extension (2): cold-start prior, "typical length" from bootstrap
-  bootstrap_cycle_length int check (bootstrap_cycle_length between 21 and 45)
+  bootstrap_cycle_length int check (bootstrap_cycle_length between 21 and 45),
+  period_length int default 5 check (period_length between 1 and 14)
 );
 
 create table if not exists app_secrets (

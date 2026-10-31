@@ -82,7 +82,9 @@ export interface Store {
   // --- settings -------------------------------------------------------------
   getSettings(): Promise<AppSettings>
   updateSettings(
-    patch: Partial<Pick<AppSettings, 'cycle_length_override' | 'timezone' | 'bootstrap_cycle_length'>>,
+    patch: Partial<
+      Pick<AppSettings, 'cycle_length_override' | 'timezone' | 'bootstrap_cycle_length' | 'period_length'>
+    >,
   ): Promise<AppSettings>
 
   // --- prediction log -------------------------------------------------------

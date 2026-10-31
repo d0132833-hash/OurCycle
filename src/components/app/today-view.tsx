@@ -28,9 +28,10 @@ interface TodayViewProps {
   prediction: Prediction
   todayEntry: DayEntry | null
   ongoing: PeriodEpisode | null
+  periodLength?: number
 }
 
-export function TodayView({ prediction, todayEntry, ongoing }: TodayViewProps) {
+export function TodayView({ prediction, todayEntry, ongoing, periodLength }: TodayViewProps) {
   const [perspective, setPerspective] = useState<'tracker' | 'partner'>('tracker')
 
   const phase = prediction.todayPhase
@@ -170,6 +171,7 @@ export function TodayView({ prediction, todayEntry, ongoing }: TodayViewProps) {
                 today={prediction.today}
                 todayEntry={todayEntry}
                 ongoingEpisodeId={ongoing?.id ?? null}
+                periodLength={periodLength ?? prediction.predictedPeriodDuration ?? 5}
               />
 
               <PartnerSignalShelf

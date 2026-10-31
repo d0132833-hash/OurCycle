@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic'
 const patchSchema = z.object({
   cycle_length_override: z.number().int().min(21).max(45).nullable().optional(),
   bootstrap_cycle_length: z.number().int().min(21).max(45).nullable().optional(),
+  period_length: z.number().int().min(1).max(14).nullable().optional(),
   timezone: z.string().refine(isValidTimezone, 'Unknown timezone').optional(),
 })
 

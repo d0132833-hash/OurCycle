@@ -14,6 +14,7 @@ export async function computeCurrentPrediction(): Promise<Prediction> {
     today: todayInTz(settings.timezone),
     cycleLengthOverride: settings.cycle_length_override,
     priorCycleLength: settings.bootstrap_cycle_length,
+    periodLength: settings.period_length ?? 5,
   })
 }
 

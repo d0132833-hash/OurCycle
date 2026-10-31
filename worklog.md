@@ -218,3 +218,29 @@ Work Log:
   - Next.js production build (`npm run build`): compiled cleanly with Turbopack and 0 errors.
 - Updated all system documentation files (`SECURITY.md`, `API.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `README.md`, `worklog.md`).
 - Pushed changes to GitHub remote (`origin main`).
+
+---
+Task ID: 4
+Agent: Antigravity
+Task: Implement adjustable period cycle length and automatic logging of following days when logging the first date.
+
+Work Log:
+- Implemented configurable `period_length` setting across data layers:
+  - Added `period_length?: number | null` to `AppSettings` domain type (`src/lib/types.ts`).
+  - Updated storage contracts and implementations (`LocalFileStore`, `SupabaseStore`) with default period duration of 5 days (range 1–10/14 days).
+  - Updated Supabase schema definition in `supabase/migration.sql`.
+  - Added `period_length` validation to `PATCH /api/settings` (`src/app/api/settings/route.ts`).
+  - Added `periodLength` option support to prediction calculations and recompute engine (`src/lib/predictions.ts`, `src/lib/recompute.ts`).
+- Implemented automatic logging of following days upon logging first date:
+  - Updated `POST /api/periods` (`src/app/api/periods/route.ts`): when `end_date` is omitted or null, it calculates `end_date = addDays(start_date, period_length - 1)`.
+  - Automatically creates/upserts `day_entries` for every day across the period duration with the episode's flow while preserving any existing symptoms, notes, or moods.
+  - Updated `PATCH /api/periods` and `DELETE /api/periods` to gracefully manage day flow entries: cleans up trimmed days when a period ends early and cascades cleanup when deleting an episode.
+- User interface enhancements:
+  - Settings View (`src/components/app/settings-view.tsx`): Added dedicated "Period cycle length" card with interactive slider (1–10 days), and added auto-log duration preview in the "Add period" dialog.
+  - Today View (`src/components/app/period-actions.tsx`): Added inline "Period cycle length: X days (adjust)" quick action and interactive dialog directly on the main screen, allowing her to adjust period cycle length with 1 tap.
+  - Bootstrap Form (`src/components/app/bootstrap-form.tsx`): Added "Typical period length" slider alongside cycle length during initial vault onboarding.
+- Quality Verification:
+  - Added 4 integration tests in `tests/comprehensive-features.test.ts` verifying settings adjustment, automatic multi-day logging on first date entry, early-end day trimming, and deletion cleanup.
+  - Vitest test suite (`npm test`): 96/96 tests passing across 6 test files.
+  - Next.js 16 production build (`npm run build`): compiled cleanly with 0 errors.
+- Updated all system markdown files (`API.md`, `ARCHITECTURE.md`, `README.md`, `worklog.md`).

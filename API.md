@@ -51,11 +51,12 @@ Returns all logged period episodes sorted ascending by `start_date`.
 
 #### `POST /api/periods`
 Records a new period start or completed episode. Triggers an automatic recompute of all future forecasts and prediction logs.
+- When `end_date` is omitted or null, `end_date` is automatically calculated according to the configured `period_length` (`start_date + period_length - 1`), and the first date and all following days in the duration are automatically logged into `day_entries` with the episode's flow.
 - **Request Body**:
   ```json
   {
     "start_date": "YYYY-MM-DD",
-    "end_date": "YYYY-MM-DD | null",
+    "end_date": "YYYY-MM-DD | null (optional; auto-calculated from period_length if omitted)",
     "flow": "spotting | light | medium | heavy"
   }
   ```
@@ -159,10 +160,14 @@ Exports the complete historical database archive as a structured download.
 ### 6. Settings & Administration
 
 #### `GET /api/settings`
-Returns application settings (timezone, cycle override).
+Returns application settings (timezone, cycle override, period length).
 
 #### `PATCH /api/settings`
-Updates settings (e.g. `cycle_length_override: 28` or `timezone: "America/New_York"`).
+Updates settings:
+- `period_length`: number between 1 and 14 (default 5; controls how many days are automatically logged on period start).
+- `cycle_length_override`: number between 21 and 45 or null (fixed cycle duration).
+- `bootstrap_cycle_length`: number between 21 and 45 (cold-start prior).
+- `timezone`: valid IANA timezone string.
 
 #### `POST /api/reset`
 Wipes all period, day, and prediction data while preserving the vault password hash.

@@ -86,7 +86,7 @@ The application operates against a uniform `Store` interface (`src/lib/storage.t
 - **Mutations Queue (`src/lib/client/offline-queue.ts`)**: Day logs and period episode writes performed while offline are enqueued in `localStorage` and automatically flushed in chronological order upon reconnect.
 
 ### D. Multi-Perspective & Care System
-- **Her View (`src/components/app/today-view.tsx`, `period-actions.tsx`)**: Focuses on symptom logging, cycle tracking, countdown forecasting, and real-time entry editing. When an entry has been recorded for today, the primary button switches dynamically to *"Edit today's log"* and renders a *"Logged for Today"* preview card with symptom chips, linking to the pre-filled `DaySheet` drawer for instant updates or clears.
+- **Her View (`src/components/app/today-view.tsx`, `period-actions.tsx`)**: Focuses on symptom logging, cycle tracking, countdown forecasting, and real-time entry editing. When an entry has been recorded for today, the primary button switches dynamically to *"Edit today's log"* and renders a *"Logged for Today"* preview card with symptom chips, linking to the pre-filled `DaySheet` drawer for instant updates or clears. Users can adjust their period cycle length (1–10 days) directly from Today view or Settings; when logging the first date of a period, the following days are automatically logged and tracked.
 - **Partner View (`src/components/app/partner-view.tsx`)**: Translates biological phase changes into actionable empathy guidance, real-time symptom alerts, and unprompted support suggestions.
 
 ### E. Cryptography & Vault Security

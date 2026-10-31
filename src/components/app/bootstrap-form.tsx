@@ -14,6 +14,7 @@ export function BootstrapForm({ today }: { today: string }) {
   const router = useRouter()
   const [start, setStart] = useState(today)
   const [length, setLength] = useState(28)
+  const [periodLength, setPeriodLength] = useState(5)
   const [busy, setBusy] = useState(false)
 
   async function submit() {
@@ -27,7 +28,7 @@ export function BootstrapForm({ today }: { today: string }) {
       const s = await fetch('/api/settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bootstrap_cycle_length: length }),
+        body: JSON.stringify({ bootstrap_cycle_length: length, period_length: periodLength }),
       })
       if (s.status === 401) {
         window.location.href = '/login'
@@ -89,10 +90,28 @@ export function BootstrapForm({ today }: { today: string }) {
         className="mb-1"
         aria-label="Typical cycle length"
       />
-      <div className="mb-8 flex justify-between text-xs text-muted-foreground">
+      <div className="mb-6 flex justify-between text-xs text-muted-foreground">
         <span>21</span>
         <span>28 · average</span>
         <span>45</span>
+      </div>
+
+      <label className="mb-2 block text-sm font-semibold text-muted-foreground">
+        Typical period length · <span className="text-primary">{periodLength} days</span>
+      </label>
+      <Slider
+        value={[periodLength]}
+        min={1}
+        max={10}
+        step={1}
+        onValueChange={(v) => setPeriodLength(v[0])}
+        className="mb-1"
+        aria-label="Typical period length"
+      />
+      <div className="mb-8 flex justify-between text-xs text-muted-foreground">
+        <span>1 day</span>
+        <span>5 · typical</span>
+        <span>10 days</span>
       </div>
 
       <Button

@@ -43,6 +43,8 @@ export interface EngineOptions {
   cycleLengthOverride?: number | null
   /** cold-start prior from bootstrap ("typical length") */
   priorCycleLength?: number | null
+  /** custom or default period duration (bleeding days) */
+  periodLength?: number | null
 }
 
 export type CycleStatus = 'used' | 'clamped' | 'outlier'
@@ -349,7 +351,8 @@ export function computePredictions(
     .reverse()
   const durationStats = weightedStats(durations)
   const predictedPeriodDuration =
-    durations.length > 0 ? Math.max(1, Math.round(durationStats.mean)) : 5
+    opts.periodLength ??
+    (durations.length > 0 ? Math.max(1, Math.round(durationStats.mean)) : 5)
 
   // ---- countdown / lateness --------------------------------------------------------------
   const daysUntilNextPeriod =

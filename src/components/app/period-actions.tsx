@@ -1,10 +1,19 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Droplets, NotebookPen, PencilLine } from 'lucide-react'
+import { Droplets, NotebookPen, PencilLine, Sliders } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Slider } from '@/components/ui/slider'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { saveWithOfflineFallback } from '@/lib/client/offline-queue'
 import { DaySheet } from './day-sheet'
 import type { DayEntry } from '@/lib/types'
@@ -28,14 +37,42 @@ export function PeriodActions({
   today,
   todayEntry,
   ongoingEpisodeId,
+  periodLength = 5,
 }: {
   today: string
   todayEntry: DayEntry | null
   ongoingEpisodeId: string | null
+  periodLength?: number
 }) {
   const router = useRouter()
   const [busy, setBusy] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [adjustOpen, setAdjustOpen] = useState(false)
+  const [currentLen, setCurrentLen] = useState(periodLength)
+  const [savingLen, setSavingLen] = useState(false)
+
+  useEffect(() => {
+    setCurrentLen(periodLength)
+  }, [periodLength])
+
+  async function saveLength() {
+    setSavingLen(true)
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ period_length: currentLen }),
+      })
+      if (!res.ok) throw new Error('Could not update period length')
+      toast.success(`Period cycle length set to ${currentLen} days`)
+      setAdjustOpen(false)
+      router.refresh()
+    } catch {
+      toast.error('Could not save period length')
+    } finally {
+      setSavingLen(false)
+    }
+  }
 
   async function startPeriod() {
     if (busy) return
@@ -48,7 +85,7 @@ export function PeriodActions({
       toast.success(
         where === 'queued'
           ? 'Saved offline — syncs automatically'
-          : 'Period started. Be gentle with yourself today.',
+          : `Period started (${currentLen} days auto-logged). Be gentle with yourself today.`,
         {
           duration: 6000,
           action: {
@@ -217,6 +254,31 @@ export function PeriodActions({
         </Button>
       </div>
 
+      <div className="flex items-center justify-between px-1 text-xs text-muted-foreground">
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic()
+            setAdjustOpen(true)
+          }}
+          className="flex items-center gap-1.5 hover:text-primary transition-colors cursor-pointer group"
+          title="Adjust period cycle length"
+        >
+          <Sliders className="h-3.5 w-3.5 text-primary/70 group-hover:text-primary transition-colors" />
+          <span>
+            Period cycle length: <strong className="text-primary font-semibold">{currentLen} days</strong>
+          </span>
+          <span className="text-[10px] text-primary/70 underline decoration-primary/30 group-hover:text-primary underline-offset-2 ml-0.5 font-medium">
+            adjust
+          </span>
+        </button>
+        {ongoingEpisodeId && (
+          <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
+            Auto-logged
+          </span>
+        )}
+      </div>
+
       {hasLoggedToday && (
         <div
           onClick={() => {
@@ -253,6 +315,57 @@ export function PeriodActions({
           </Button>
         </div>
       )}
+
+      <Dialog open={adjustOpen} onOpenChange={setAdjustOpen}>
+        <DialogContent className="w-[92vw] max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-display text-lg">Adjust period cycle length</DialogTitle>
+            <DialogDescription className="text-xs">
+              Set how many days your period typically lasts. When you log the first date, the following days are automatically logged for you.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-muted-foreground">Period length</span>
+              <span className="text-sm font-bold text-primary">{currentLen} days</span>
+            </div>
+            <Slider
+              value={[currentLen]}
+              min={1}
+              max={10}
+              step={1}
+              onValueChange={(v) => setCurrentLen(v[0])}
+              aria-label="Period cycle length"
+            />
+            <div className="flex justify-between text-[11px] text-muted-foreground">
+              <span>1 day</span>
+              <span>5 days (typical)</span>
+              <span>10 days</span>
+            </div>
+          </div>
+
+          <DialogFooter className="flex-row gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCurrentLen(periodLength)
+                setAdjustOpen(false)
+              }}
+              className="flex-1 rounded-xl text-xs"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={saveLength}
+              disabled={savingLen}
+              className="flex-1 rounded-xl bg-primary text-primary-foreground text-xs"
+            >
+              {savingLen ? 'Saving…' : 'Save length'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <DaySheet date={today} entry={todayEntry} open={sheetOpen} onOpenChange={setSheetOpen} />
     </div>

@@ -51,6 +51,7 @@ import {
   FileText,
 } from 'lucide-react'
 import type { AppSettings, PeriodEpisode } from '@/lib/types'
+import { addDays } from '@/lib/dates'
 import { RotateForm } from './vault-forms'
 
 const TIMEZONES = [
@@ -92,8 +93,10 @@ export function SettingsView({
 
   const [overrideOn, setOverrideOn] = useState(settings.cycle_length_override !== null)
   const [overrideLen, setOverrideLen] = useState(settings.cycle_length_override ?? 28)
+  const [periodLen, setPeriodLen] = useState(settings.period_length ?? 5)
   const [tz, setTz] = useState(settings.timezone)
   const [savingCycle, setSavingCycle] = useState(false)
+  const [savingPeriod, setSavingPeriod] = useState(false)
   const [savingTz, setSavingTz] = useState(false)
   const [palette, setPalette] = useState('rose')
   const [discreet, setDiscreet] = useState(false)
@@ -214,6 +217,19 @@ export function SettingsView({
       await patch({ cycle_length_override: on ? len : null }, setSavingCycle)
     } finally {
       setSavingCycle(false)
+    }
+  }
+
+  async function savePeriodLen(len: number) {
+    setPeriodLen(len)
+    setSavingPeriod(true)
+    try {
+      await patch({ period_length: len }, setSavingPeriod)
+      toast.success(`Period cycle length set to ${len} days`)
+    } catch {
+      toast.error('Could not save period length')
+    } finally {
+      setSavingPeriod(false)
     }
   }
 
@@ -562,6 +578,41 @@ export function SettingsView({
 
         {/* Right Column: Tracking Engine, History & Security */}
         <div className="space-y-5">
+          {/* Period length / Bleeding duration */}
+          <Card className="card-soft border-0">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="font-display text-base font-semibold">Period cycle length</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Number of bleeding days. When you log the first date, the following days are logged automatically.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <Label className="mb-2 text-sm text-muted-foreground">
+                  Period length · <span className="text-primary font-semibold">{periodLen} days</span>
+                </Label>
+                <Slider
+                  value={[periodLen]}
+                  min={1}
+                  max={10}
+                  step={1}
+                  onValueChange={(v) => setPeriodLen(v[0])}
+                  onValueCommit={(v) => void savePeriodLen(v[0])}
+                  aria-label="Adjust period cycle length"
+                />
+                <div className="mt-1 flex justify-between text-[11px] text-muted-foreground">
+                  <span>1 day</span>
+                  <span>5 days (average)</span>
+                  <span>10 days</span>
+                </div>
+              </div>
+              {savingPeriod ? <p className="mt-2 text-[11px] text-muted-foreground">Saving…</p> : null}
+            </CardContent>
+          </Card>
+
           {/* Cycle length */}
           <Card className="card-soft border-0">
             <CardContent className="p-5">
@@ -820,6 +871,11 @@ export function SettingsView({
                 onChange={(e) => setAddEndDate(e.target.value)}
                 className="mt-1 h-9 rounded-xl text-xs"
               />
+              {!addEndDate && addStartDate && (
+                <p className="mt-1 text-[11px] text-primary">
+                  Auto-logs {periodLen} days (ends {addDays(addStartDate, periodLen - 1)})
+                </p>
+              )}
             </div>
             <div>
               <Label className="text-xs text-muted-foreground">Flow</Label>

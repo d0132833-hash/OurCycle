@@ -20,6 +20,7 @@ A private, two-person menstrual cycle tracker, installed as a PWA straight from 
 - σ ≥ 3 → **irregular mode**: every date renders as a range, never a single date
 - Today > predicted start + 10 → calm "No period logged yet" state (never "late" in red)
 - Manual override ("Use fixed cycle length") bypasses learning while still reporting what auto-learn would predict
+- Adjustable period cycle length (1–10 days): when logging the first date of a period, following days are automatically logged and tracked according to her period length
 - Every add/edit/delete of a period triggers a full recompute; forecast accuracy is measured in `prediction_log` and surfaced as *"Model accuracy: X/6 within ±1 day"* on Insights
 
 ---

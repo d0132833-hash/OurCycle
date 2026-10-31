@@ -458,5 +458,126 @@ describe('Rigorous Feature & API Test Suite', () => {
       expect(secret?.session_epoch).toBe(2)
     })
   })
+
+  // --------------------------------------------------------------------------
+  // Period Cycle Length Adjustment & Auto-Logging
+  // --------------------------------------------------------------------------
+  describe('Period Cycle Length Adjustment & Auto-Logging Following Days', () => {
+    beforeEach(() => {
+      vi.spyOn(apiAuth, 'getSession').mockResolvedValue({
+        v: 1,
+        iat: 1000,
+        exp: 2000,
+        j: 'test-j',
+      })
+    })
+
+    it('allows adjusting period cycle length via /api/settings', async () => {
+      // Default period length is 5
+      const s0 = await store.getSettings()
+      expect(s0.period_length).toBe(5)
+
+      // Adjust period cycle length to 6 days
+      const req = new NextRequest('http://localhost:3000/api/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' },
+        body: JSON.stringify({ period_length: 6 }),
+      })
+      const res = await settingsPatch(req)
+      expect(res.status).toBe(200)
+      const data = await res.json()
+      expect(data.settings.period_length).toBe(6)
+
+      const s1 = await store.getSettings()
+      expect(s1.period_length).toBe(6)
+    })
+
+    it('automatically logs following days according to period cycle length when logging first date', async () => {
+      // Set period cycle length to 4 days
+      await store.updateSettings({ period_length: 4 })
+
+      // User logs only the first date (start_date)
+      const postReq = new NextRequest('http://localhost:3000/api/periods', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' },
+        body: JSON.stringify({ start_date: '2026-03-01', flow: 'heavy' }),
+      })
+      const postRes = await periodsPost(postReq)
+      expect(postRes.status).toBe(201)
+      const postData = await postRes.json()
+
+      // The period episode should have end_date set automatically to 2026-03-04 (4 days: 01, 02, 03, 04)
+      expect(postData.period.start_date).toBe('2026-03-01')
+      expect(postData.period.end_date).toBe('2026-03-04')
+      expect(postData.period.flow).toBe('heavy')
+
+      // All 4 days must be logged in day_entries automatically
+      const days = await store.listDays('2026-03-01', '2026-03-04')
+      expect(days.length).toBe(4)
+      expect(days.map((d) => d.date)).toEqual([
+        '2026-03-01',
+        '2026-03-02',
+        '2026-03-03',
+        '2026-03-04',
+      ])
+      days.forEach((d) => {
+        expect(d.flow).toBe('heavy')
+      })
+    })
+
+    it('cleans up following days when period is shortened via PATCH', async () => {
+      // 5-day period: 2026-03-10 to 2026-03-14
+      await store.updateSettings({ period_length: 5 })
+      const postReq = new NextRequest('http://localhost:3000/api/periods', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' },
+        body: JSON.stringify({ start_date: '2026-03-10' }),
+      })
+      const postRes = await periodsPost(postReq)
+      const postData = await postRes.json()
+      const epId = postData.period.id
+
+      // Verify all 5 days exist
+      let days = await store.listDays('2026-03-10', '2026-03-14')
+      expect(days.length).toBe(5)
+
+      // Shorten period to end on 2026-03-12 (ended early on day 3)
+      const patchReq = new NextRequest('http://localhost:3000/api/periods', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' },
+        body: JSON.stringify({ id: epId, end_date: '2026-03-12' }),
+      })
+      const patchRes = await periodsPatch(patchReq)
+      expect(patchRes.status).toBe(200)
+
+      // Days 13 and 14 should have been cleaned up
+      days = await store.listDays('2026-03-10', '2026-03-14')
+      expect(days.map((d) => d.date)).toEqual(['2026-03-10', '2026-03-11', '2026-03-12'])
+    })
+
+    it('cleans up auto-logged days when period is deleted', async () => {
+      await store.updateSettings({ period_length: 3 })
+      const postReq = new NextRequest('http://localhost:3000/api/periods', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' },
+        body: JSON.stringify({ start_date: '2026-03-20' }),
+      })
+      const postRes = await periodsPost(postReq)
+      const postData = await postRes.json()
+      const epId = postData.period.id
+
+      expect((await store.listDays('2026-03-20', '2026-03-22')).length).toBe(3)
+
+      // Delete period
+      const delReq = new NextRequest(`http://localhost:3000/api/periods?id=${epId}`, {
+        method: 'DELETE',
+        headers: { Origin: 'http://localhost:3000' },
+      })
+      const delRes = await periodsDelete(delReq)
+      expect(delRes.status).toBe(200)
+
+      expect((await store.listDays('2026-03-20', '2026-03-22')).length).toBe(0)
+    })
+  })
 })
 
