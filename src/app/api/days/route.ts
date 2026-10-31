@@ -42,6 +42,35 @@ const upsertSchema = z.object({
   note: z.string().max(4000).nullable().optional(),
 })
 
+async function cleanupDayFlow(store: ReturnType<typeof getStore>, date: string) {
+  const days = await store.listDays(date, date)
+  const entry = days[0]
+  if (!entry) return
+  const hasOtherData =
+    entry.mood !== null ||
+    entry.energy !== null ||
+    entry.libido !== null ||
+    entry.cramps !== null ||
+    entry.headache !== null ||
+    entry.back_pain !== null ||
+    entry.breast_tenderness !== null ||
+    entry.acne !== null ||
+    entry.bloating !== null ||
+    entry.fatigue !== null ||
+    entry.bbt != null ||
+    entry.weight != null ||
+    entry.sleep_hours != null ||
+    entry.water_glasses != null ||
+    entry.exercise != null ||
+    (entry.tags && entry.tags.length > 0) ||
+    (entry.note && entry.note.trim() !== '')
+  if (hasOtherData) {
+    await store.upsertDay({ date, flow: 'none' })
+  } else {
+    await store.deleteDay(date)
+  }
+}
+
 async function handlePeriodSyncForDay(
   store: ReturnType<typeof getStore>,
   input: z.infer<typeof upsertSchema>,
@@ -83,6 +112,40 @@ async function handlePeriodSyncForDay(
     }
 
     await syncPredictionLog()
+  } else if (input.flow === 'none' || input.flow === null) {
+    // Flow was cleared or set to none on this date
+    const periods = await store.listPeriods()
+    const episode = periods.find(
+      (e) =>
+        e.start_date === input.date ||
+        (e.start_date <= input.date && (e.end_date === null || e.end_date >= input.date)),
+    )
+
+    if (episode) {
+      if (episode.start_date === input.date) {
+        // Clearing flow on period start date cancels the entire period cycle
+        await store.deletePeriod(episode.id)
+        const oldEnd = episode.end_date ?? episode.start_date
+        const dates = dayRange(episode.start_date, oldEnd)
+        for (const d of dates) {
+          if (d !== input.date) await cleanupDayFlow(store, d)
+        }
+      } else {
+        // Clearing flow on intermediate or ending day shortens the period
+        const newEnd = addDays(input.date, -1)
+        if (newEnd < episode.start_date) {
+          await store.deletePeriod(episode.id)
+        } else {
+          await store.updatePeriod(episode.id, { end_date: newEnd })
+        }
+        const oldEnd = episode.end_date ?? input.date
+        const dates = dayRange(input.date, oldEnd)
+        for (const d of dates) {
+          if (d !== input.date) await cleanupDayFlow(store, d)
+        }
+      }
+      await syncPredictionLog()
+    }
   }
 }
 
@@ -133,6 +196,48 @@ export async function DELETE(req: NextRequest) {
   if (!(await getSession())) return unauthorizedResponse()
   const date = req.nextUrl.searchParams.get('date')
   if (!date || !daySchema.safeParse(date).success) return badRequest('Invalid date')
-  await getStore().deleteDay(date)
+
+  const store = getStore()
+  const periods = await store.listPeriods()
+
+  // Find if date is part of any period episode
+  const episode = periods.find(
+    (e) =>
+      e.start_date === date ||
+      (e.start_date <= date && (e.end_date === null || e.end_date >= date)),
+  )
+
+  if (episode) {
+    if (episode.start_date === date) {
+      // User is clearing the first date of the period -> delete the entire period episode!
+      await store.deletePeriod(episode.id)
+      const oldEnd = episode.end_date ?? episode.start_date
+      const dates = dayRange(episode.start_date, oldEnd)
+      for (const d of dates) {
+        if (d !== date) {
+          await cleanupDayFlow(store, d)
+        }
+      }
+    } else {
+      // User is clearing an intermediate or ending day -> shorten the period episode!
+      const newEnd = addDays(date, -1)
+      if (newEnd < episode.start_date) {
+        await store.deletePeriod(episode.id)
+      } else {
+        await store.updatePeriod(episode.id, { end_date: newEnd })
+      }
+      const oldEnd = episode.end_date ?? date
+      const dates = dayRange(date, oldEnd)
+      for (const d of dates) {
+        if (d !== date) {
+          await cleanupDayFlow(store, d)
+        }
+      }
+    }
+  }
+
+  await store.deleteDay(date)
+  await syncPredictionLog()
+
   return NextResponse.json({ ok: true })
 }

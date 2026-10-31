@@ -199,6 +199,29 @@ All notable changes and architectural features introduced to the Our Cycle codeb
 
 ---
 
+## [0.3.4] — 2026-10-31
+
+### 🧹 Period Cycle Clearing, Calendar Real-Time Un-Highlight & Settings Adjustment
+
+#### 1. Period Cycle Clearing on Day Clear (`/api/days` & `day-sheet.tsx`)
+- Fixed bug where clearing a day only deleted the `day_entries` row without updating or removing the period episode in `period_logs`, which caused the calendar to still highlight the date as logged.
+- `DELETE /api/days`:
+  - Clearing the **first date** of a period episode now automatically deletes the entire period episode from `period_logs` and cascades cleanup to all auto-logged following days.
+  - Clearing an **intermediate or ending day** shortens the period episode to end the day before, cleaning up any trailing days.
+- Setting flow to `none` or `null` in `POST` / `PATCH` `/api/days` applies the same intelligent cascade, removing or shortening the period episode accordingly.
+
+#### 2. Immediate Calendar Un-Highlighting (`calendar-grid.tsx`)
+- Added `handleDayCleared` callback to `CalendarGrid` passed into `DaySheet`.
+- Tapping "Clear" or selecting `None` flow now immediately removes the red period highlight from the cleared date and all following period days with zero reload lag.
+
+#### 3. Robust Period Cycle Length Adjustment (`period-actions.tsx` & `api-helpers.ts`)
+- Fixed root cause of `"couldnt update the period lenght"` error:
+  - Enhanced `isSameOrigin` CSRF validation in `src/lib/api-helpers.ts` to recognize browser `Sec-Fetch-Site: same-origin` headers and interoperate between loopback addresses (`localhost` and `127.0.0.1`).
+  - Extracted specific server error messages in `PeriodActions.saveLength()`.
+  - Wrapped ongoing period episode synchronization in non-fatal handling so settings updates always succeed.
+
+---
+
 ## [0.3.3] — 2026-10-31
 
 ### 🩸 Comprehensive Auto-Logging of Following Period Days & Calendar State Sync

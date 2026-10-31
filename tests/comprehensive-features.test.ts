@@ -646,6 +646,110 @@ describe('Rigorous Feature & API Test Suite', () => {
         expect(d.flow).toBe('heavy')
       })
     })
+
+    it('clears entire period cycle when first date is deleted via DELETE /api/days', async () => {
+      await store.updateSettings({ period_length: 4 })
+
+      // Create period on 2026-06-01 for 4 days (01, 02, 03, 04)
+      const dayReq = new NextRequest('http://localhost:3000/api/days', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' },
+        body: JSON.stringify({
+          date: '2026-06-01',
+          flow: 'heavy',
+          is_period_start: true,
+          period_length: 4,
+        }),
+      })
+      await daysPost(dayReq)
+
+      expect((await store.listPeriods()).some((p) => p.start_date === '2026-06-01')).toBe(true)
+      expect((await store.listDays('2026-06-01', '2026-06-04')).length).toBe(4)
+
+      // User clears the first day (2026-06-01)
+      const delReq = new NextRequest('http://localhost:3000/api/days?date=2026-06-01', {
+        method: 'DELETE',
+        headers: { Origin: 'http://localhost:3000' },
+      })
+      const delRes = await daysDelete(delReq)
+      expect(delRes.status).toBe(200)
+
+      // The period episode must be gone
+      expect((await store.listPeriods()).some((p) => p.start_date === '2026-06-01')).toBe(false)
+
+      // The auto-logged days must be cleaned up
+      const remainingDays = await store.listDays('2026-06-01', '2026-06-04')
+      expect(remainingDays.length).toBe(0)
+    })
+
+    it('shortens period cycle when intermediate day is deleted via DELETE /api/days', async () => {
+      await store.updateSettings({ period_length: 5 })
+
+      // Create period on 2026-07-01 for 5 days (01, 02, 03, 04, 05)
+      const dayReq = new NextRequest('http://localhost:3000/api/days', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' },
+        body: JSON.stringify({
+          date: '2026-07-01',
+          flow: 'medium',
+          is_period_start: true,
+          period_length: 5,
+        }),
+      })
+      await daysPost(dayReq)
+
+      // User clears day 4 (2026-07-04)
+      const delReq = new NextRequest('http://localhost:3000/api/days?date=2026-07-04', {
+        method: 'DELETE',
+        headers: { Origin: 'http://localhost:3000' },
+      })
+      const delRes = await daysDelete(delReq)
+      expect(delRes.status).toBe(200)
+
+      // Period episode should now end on 2026-07-03
+      const ep = (await store.listPeriods()).find((p) => p.start_date === '2026-07-01')
+      expect(ep?.end_date).toBe('2026-07-03')
+
+      // Days 01, 02, 03 should still exist with flow, but 04 and 05 should be gone
+      const remainingDays = await store.listDays('2026-07-01', '2026-07-05')
+      expect(remainingDays.map((d) => d.date)).toEqual(['2026-07-01', '2026-07-02', '2026-07-03'])
+    })
+
+    it('clears period cycle when flow is set to none on period start date via POST /api/days', async () => {
+      await store.updateSettings({ period_length: 3 })
+
+      // Create period on 2026-08-01
+      const dayReq = new NextRequest('http://localhost:3000/api/days', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' },
+        body: JSON.stringify({
+          date: '2026-08-01',
+          flow: 'light',
+          is_period_start: true,
+          period_length: 3,
+        }),
+      })
+      await daysPost(dayReq)
+
+      // Now set flow to 'none' on 2026-08-01
+      const clearReq = new NextRequest('http://localhost:3000/api/days', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' },
+        body: JSON.stringify({
+          date: '2026-08-01',
+          flow: 'none',
+        }),
+      })
+      const clearRes = await daysPost(clearReq)
+      expect(clearRes.status).toBe(201)
+
+      // Period episode must be removed
+      expect((await store.listPeriods()).some((p) => p.start_date === '2026-08-01')).toBe(false)
+
+      // Following days (08-02, 08-03) should be cleaned up
+      const following = await store.listDays('2026-08-02', '2026-08-03')
+      expect(following.length).toBe(0)
+    })
   })
 })
 

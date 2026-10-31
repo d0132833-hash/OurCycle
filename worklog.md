@@ -307,3 +307,37 @@ Work Log:
   - Vitest test suite (`npm test`): 100/100 tests passing across 6 test files.
   - Next.js production build (`npm run build`): compiled cleanly with 0 TypeScript/lint errors.
 - Pushed changes to GitHub remote (`origin main`).
+
+---
+Task ID: 7
+Agent: Antigravity
+Task: Implement period cycle clearing on day clear, instant calendar un-highlight, and robust period cycle length adjustment.
+
+Work Log:
+- Resolved period cycle clearing bug & calendar stuck highlight:
+  - Root cause: `DELETE /api/days` previously only deleted the day entry from `day_entries` without touching `period_logs`. Because the episode remained in `period_logs`, `episodeDay.has(d)` was still true, causing the calendar to still highlight the date (and all following days) as logged.
+  - Solution in `src/app/api/days/route.ts`:
+    - Updated `DELETE /api/days`:
+      - If `date === episode.start_date`, deletes the period episode and cascades cleanup to all auto-logged following days.
+      - If `date > episode.start_date`, shortens the period episode to `end_date = addDays(date, -1)` and cleans up trailing auto-logged days.
+    - Updated `handlePeriodSyncForDay`:
+      - When flow is set to `none` or `null` in `POST` / `PATCH`, automatically deletes the period episode if set on the start date, or shortens it if set on an intermediate date, cleaning up trailing days.
+  - Solution in `src/components/app/day-sheet.tsx` & `src/components/app/calendar-grid.tsx`:
+    - Added `onCleared?: (date: string) => void` to `DaySheet` and hooked it to `clear()`.
+    - Added `handleDayCleared` in `CalendarGrid` to optimistically remove/shorten the episode from `localEpisodes` and remove flow from `localEntries`.
+    - Result: The calendar immediately un-highlights cleared dates and their associated period cycle without lag.
+- Resolved "couldn't update the period length" error:
+  - Root cause 1: `isSameOrigin(req)` in `src/lib/api-helpers.ts` strictly compared `originHost === targetHost`, which failed on local environments when `localhost:3000` was accessed while the server host header evaluated to `127.0.0.1:3000` (or `[::1]:3000`), resulting in 403 Forbidden.
+  - Root cause 2: `PeriodActions.saveLength()` failed if the chained ongoing episode PATCH failed or threw, and lacked specific server error extraction.
+  - Solution:
+    - Updated `isSameOrigin(req)` in `src/lib/api-helpers.ts`:
+      - Immediately accepts `Sec-Fetch-Site: same-origin` validated by modern browsers.
+      - Interoperates loopback addresses (`localhost`, `127.0.0.1`, `::1`) on the same port.
+    - Updated `saveLength()` in `src/components/app/period-actions.tsx`:
+      - Safely extracts `errData?.error` from the API response.
+      - Wrapped ongoing episode synchronization in a safe non-fatal try/catch so settings updates always succeed.
+- Testing & Verification:
+  - Added 3 new integration tests in `tests/comprehensive-features.test.ts` for clearing the period start date via DELETE, shortening via intermediate day DELETE, and clearing via flow='none'.
+  - Vitest test suite (`npm test`): 103/103 tests passing across 6 test files.
+  - Next.js production build (`npm run build`): compiled cleanly with 0 TypeScript/lint errors.
+- Pushed changes to GitHub remote (`origin main`).

@@ -130,6 +130,7 @@ interface Props {
     periodLength: number,
     draft: DayDraft,
   ) => void
+  onCleared?: (date: string) => void
 }
 
 export function DaySheet({
@@ -139,6 +140,7 @@ export function DaySheet({
   onOpenChange,
   periodLength = 5,
   onSaved,
+  onCleared,
 }: Props) {
   const router = useRouter()
   const [draft, setDraft] = useState<DayDraft>(EMPTY)
@@ -325,7 +327,8 @@ export function DaySheet({
         window.location.href = '/login'
         return
       }
-      toast.success('Entry cleared')
+      onCleared?.(date)
+      toast.success('Entry and period cleared')
       onOpenChange(false)
       router.refresh()
     } finally {

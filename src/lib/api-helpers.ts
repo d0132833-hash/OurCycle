@@ -60,11 +60,24 @@ export function getClientIp(req: Request): string {
 
 // --- CSRF origin validation --------------------------------------------------
 
+function isLoopbackHost(h: string): boolean {
+  const hostOnly = h.split(':')[0].replace(/^\[|\]$/g, '').toLowerCase()
+  return hostOnly === 'localhost' || hostOnly === '127.0.0.1' || hostOnly === '::1'
+}
+
+function getHostPort(h: string): string {
+  const parts = h.split(':')
+  return parts.length > 1 ? parts[parts.length - 1] : ''
+}
+
 export function isSameOrigin(req: Request): boolean {
   // Reject explicitly cross-site browser fetches immediately
   const fetchSite = req.headers.get('sec-fetch-site')
   if (fetchSite === 'cross-site') {
     return false
+  }
+  if (fetchSite === 'same-origin') {
+    return true
   }
 
   const origin = req.headers.get('origin')
@@ -80,7 +93,18 @@ export function isSameOrigin(req: Request): boolean {
 
   try {
     const originHost = new URL(origin).host
-    return originHost === targetHost || (host ? originHost === host : false)
+    if (originHost === targetHost || (host ? originHost === host : false)) {
+      return true
+    }
+    // Allow local loopback address interoperability (localhost vs 127.0.0.1 on the same port)
+    if (
+      isLoopbackHost(originHost) &&
+      isLoopbackHost(targetHost) &&
+      getHostPort(originHost) === getHostPort(targetHost)
+    ) {
+      return true
+    }
+    return false
   } catch {
     return false
   }

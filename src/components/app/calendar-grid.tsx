@@ -187,12 +187,88 @@ export function CalendarGrid({
 
   const selectedEntry = selected ? (entryByDate.get(selected) ?? null) : null
 
+  const handleDayCleared = (clearedDate: string) => {
+    // 1. Find if clearedDate starts or belongs to any episode in localEpisodes
+    let affectedRange: string[] = [clearedDate]
+
+    setLocalEpisodes((prev) => {
+      const ep = prev.find(
+        (e) =>
+          e.start_date === clearedDate ||
+          (e.start_date <= clearedDate && (e.end_date === null || e.end_date >= clearedDate)),
+      )
+      if (!ep) return prev
+
+      if (ep.start_date === clearedDate) {
+        // Clearing period start -> remove entire episode!
+        const oldEnd = ep.end_date ?? ep.start_date
+        affectedRange = dayRange(ep.start_date, oldEnd)
+        return prev.filter((p) => p.id !== ep.id)
+      } else {
+        // Shorten episode
+        const newEnd = addDays(clearedDate, -1)
+        const oldEnd = ep.end_date ?? clearedDate
+        affectedRange = dayRange(clearedDate, oldEnd)
+        if (newEnd < ep.start_date) {
+          return prev.filter((p) => p.id !== ep.id)
+        } else {
+          return prev.map((p) => (p.id === ep.id ? { ...p, end_date: newEnd } : p))
+        }
+      }
+    })
+
+    // 2. Clear flow and entry for affected dates from localEntries
+    setLocalEntries((prev) => {
+      const affectedSet = new Set(affectedRange)
+      affectedSet.add(clearedDate)
+
+      return prev
+        .filter((e) => {
+          if (e.date === clearedDate) {
+            return false
+          }
+          if (affectedSet.has(e.date)) {
+            const hasOther =
+              e.mood !== null ||
+              e.energy !== null ||
+              e.libido !== null ||
+              e.cramps !== null ||
+              e.headache !== null ||
+              e.back_pain !== null ||
+              e.breast_tenderness !== null ||
+              e.acne !== null ||
+              e.bloating !== null ||
+              e.fatigue !== null ||
+              e.bbt !== null ||
+              e.weight !== null ||
+              e.sleep_hours !== null ||
+              e.water_glasses !== null ||
+              (e.tags && e.tags.length > 0) ||
+              (e.note && e.note.trim() !== '')
+            return Boolean(hasOther)
+          }
+          return true
+        })
+        .map((e) => {
+          if (affectedSet.has(e.date)) {
+            return { ...e, flow: null }
+          }
+          return e
+        })
+    })
+  }
+
   const handleDaySaved = (
     savedDate: string,
     savedFlow: string | null,
     isPeriodStart: boolean,
     savedPeriodLen: number,
   ) => {
+    if (savedFlow === 'none' || savedFlow === null) {
+      handleDayCleared(savedDate)
+      return
+    }
+
     setLocalEntries((prev) => {
       const map = new Map(prev.map((e) => [e.date, e]))
       const cur = map.get(savedDate)
@@ -413,6 +489,7 @@ export function CalendarGrid({
         onOpenChange={setOpen}
         periodLength={periodLength}
         onSaved={handleDaySaved}
+        onCleared={handleDayCleared}
       />
     </div>
   )

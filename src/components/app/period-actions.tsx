@@ -64,29 +64,36 @@ export function PeriodActions({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ period_length: currentLen }),
       })
-      if (!res.ok) throw new Error('Could not update period length')
+      if (!res.ok) {
+        const errData = (await res.json().catch(() => null)) as { error?: string } | null
+        throw new Error(errData?.error ?? 'Could not update period length')
+      }
 
       if (ongoingEpisodeId) {
-        const pRes = await fetch('/api/periods')
-        if (pRes.ok) {
-          const pData = await pRes.json()
-          const ongoing = (pData.periods as any[])?.find((p) => p.id === ongoingEpisodeId)
-          if (ongoing) {
-            const newEnd = addDays(ongoing.start_date, currentLen - 1)
-            await fetch('/api/periods', {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ id: ongoingEpisodeId, end_date: newEnd }),
-            })
+        try {
+          const pRes = await fetch('/api/periods')
+          if (pRes.ok) {
+            const pData = await pRes.json()
+            const ongoing = (pData.periods as any[])?.find((p) => p.id === ongoingEpisodeId)
+            if (ongoing) {
+              const newEnd = addDays(ongoing.start_date, currentLen - 1)
+              await fetch('/api/periods', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: ongoingEpisodeId, end_date: newEnd }),
+              })
+            }
           }
+        } catch {
+          // Non-fatal ongoing episode sync
         }
       }
 
       toast.success(`Period cycle length set to ${currentLen} days`)
       setAdjustOpen(false)
       router.refresh()
-    } catch {
-      toast.error('Could not save period length')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not save period length')
     } finally {
       setSavingLen(false)
     }
