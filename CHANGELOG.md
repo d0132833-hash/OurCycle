@@ -4,6 +4,55 @@ All notable changes and architectural features introduced to the Our Cycle codeb
 
 ---
 
+## [0.7.0] — 2026-10-31
+
+### 🛡️ Comprehensive Security Audit & Defense-in-Depth Hardening
+
+#### 1. Authentication & Denial-of-Service Defense
+- **Per-IP Sliding Lockout (`src/lib/lockout.ts`, `src/app/api/auth/login/route.ts`)**:
+  - Scoped brute-force failed login counters to individual client IP addresses using an in-memory sliding window.
+  - Prevents an unauthenticated remote attacker from locking legitimate vault owners out of the application (mitigating global DoS).
+  - Converted database throttling into a high-threshold emergency circuit-breaker (25 consecutive failures) against distributed botnet attacks.
+- **PIN Entropy Enforcement (`src/app/api/auth/setup/route.ts`, `src/app/api/auth/rotate/route.ts`, `src/components/app/vault-forms.tsx`)**:
+  - Enforced a minimum 4-digit PIN requirement (`min(4)` up to `max(32)`) in backend Zod schemas and frontend forms.
+  - Updated client-side PIN strength evaluator to flag PINs shorter than 4 digits.
+- **Onboarding Gating (`src/app/api/auth/setup/route.ts`)**:
+  - Added support for an optional `SETUP_TOKEN` environment variable to prevent unauthenticated vault claim races during initial production deployment.
+- **Sudo Mode on Data Wipe (`src/app/api/reset/route.ts`, `src/components/app/settings-view.tsx`)**:
+  - `POST /api/reset` now requires re-verifying the current vault PIN via Argon2id before wiping records.
+  - Updated the reset confirmation dialog with a password input field and rate limiting.
+
+#### 2. Client Privacy & Anti-Surveillance
+- **PWA Service Worker Privacy (`public/sw.js`)**:
+  - Excluded authenticated navigation HTML streams from permanent `CacheStorage`. Navigation fetches live data or falls back to the clean, generic `/offline` shell.
+  - Prevents persistent plaintext storage of sensitive cycle records, symptoms, and notes on shared devices.
+- **Vault Lock Eviction (`src/components/app/settings-view.tsx`)**:
+  - Locking the vault / signing out now actively purges all browser `CacheStorage` instances and wipes pending mutation queues in `localStorage['ourcycle.queue']`.
+
+#### 3. Injection Prevention & Defensive Headers
+- **CSV Formula Injection Sanitization (`src/app/api/export/route.ts`)**:
+  - Added `csvCell()` escaping that prepends a single quote (`'`) to any export cell starting with spreadsheet formula triggers (`=`, `+`, `-`, `@`, `\t`, `\r`), preventing DDE code execution and data exfiltration in Excel and Google Sheets.
+  - Added `Cache-Control: no-store, no-cache, must-revalidate, private` to `/api/export` responses.
+- **CSRF & Origin Validation (`src/lib/api-helpers.ts`, `src/app/api/auth/login/route.ts`)**:
+  - Enhanced `isSameOrigin()` with `Sec-Fetch-Site: cross-site` detection and `x-forwarded-host` reverse proxy inspection.
+  - Added origin check and IP rate limiting to `POST /api/auth/login`.
+- **Browser Security Headers (`next.config.ts`, `src/proxy.ts`)**:
+  - Configured `X-Frame-Options: DENY`, `Content-Security-Policy: ... frame-ancestors 'none'; object-src 'none'; ...`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, and `Permissions-Policy`.
+
+#### 4. Infrastructure, Dependency & Build Hygiene
+- **Remediated Native Dependency Vulnerability (`package.json`)**:
+  - Moved `sharp` from production runtime `dependencies` to `devDependencies` and upgraded to `^0.35.5`, eliminating high-severity libvips memory corruption CVEs.
+- **Sanitized Health Check Errors (`src/app/api/health/route.ts`)**:
+  - Replaced raw database driver exception messages with a sanitized generic response, logging details solely to the server console.
+- **Local Storage Permissions (`src/lib/local-store.ts`)**:
+  - Added `{ mode: 0o600 }` to file write operations and `0o700` to directories to prevent world-readable permission leakage on multi-user systems.
+- **Strict Build Mode (`next.config.ts`)**:
+  - Removed `ignoreBuildErrors: true` and enabled `reactStrictMode: true`. TypeScript compiler typechecking now executes strictly on every build.
+- **Unit & Security Tests (`tests/api.test.ts`)**:
+  - Added 4 automated security tests covering CSV sanitization, Cache-Control headers, sudo reset verification, and setup minimum PIN length (92/92 tests passing).
+
+---
+
 ## [0.6.0] — 2026-10-31
 
 ### 🛒 Custom Shopping Checklist by Her, 🔋 Partner Social Battery Adjustment & 🎨 Route-Tailored Loading Skeletons

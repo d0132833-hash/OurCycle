@@ -8,7 +8,7 @@ import {
   signSession,
   verifyPassphrase,
 } from '@/lib/crypto'
-import { badRequest, checkRateLimit, isSameOrigin, readJson, tooMany } from '@/lib/api-helpers'
+import { badRequest, checkRateLimit, getClientIp, isSameOrigin, readJson, tooMany } from '@/lib/api-helpers'
 import { getLockState, recordLoginFailure, recordLoginSuccess } from '@/lib/lockout'
 import { getSession } from '@/lib/api-auth'
 import { z } from 'zod'
@@ -19,7 +19,8 @@ const bodySchema = z.object({
   current: z.string().min(1),
   next: z
     .string()
-    .min(1, 'PIN is required')
+    .min(4, 'PIN must be at least 4 digits')
+    .max(32, 'PIN must not exceed 32 digits')
     .regex(/^\d+$/, 'PIN must contain numbers only'),
 })
 
@@ -28,7 +29,8 @@ export async function POST(req: NextRequest) {
   if (!isSameOrigin(req)) {
     return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 })
   }
-  if (!checkRateLimit('vault-rotate', 3, 900)) {
+  const ip = getClientIp(req)
+  if (!checkRateLimit(`vault-rotate:${ip}`, 5, 900)) {
     return tooMany(900)
   }
   if (!(await getSession())) {
@@ -37,7 +39,7 @@ export async function POST(req: NextRequest) {
   const parsed = bodySchema.safeParse(await readJson(req))
   if (!parsed.success) return badRequest(parsed.error.issues[0]?.message ?? 'Invalid input')
 
-  const lock = await getLockState()
+  const lock = await getLockState(ip)
   if (lock.locked) return tooMany(lock.retryAfterSec)
 
   const store = getStore()
@@ -45,11 +47,11 @@ export async function POST(req: NextRequest) {
   if (!secret) return badRequest('Vault not set up yet')
 
   if (!verifyPassphrase(parsed.data.current, secret.passphrase_hash)) {
-    await recordLoginFailure()
+    await recordLoginFailure(ip)
     return NextResponse.json({ error: 'Incorrect vault PIN' }, { status: 401 })
   }
 
-  await recordLoginSuccess()
+  await recordLoginSuccess(ip)
   const row = await store.rotateSecret(hashPassphrase(parsed.data.next))
   const res = NextResponse.json({ ok: true })
   res.cookies.set(

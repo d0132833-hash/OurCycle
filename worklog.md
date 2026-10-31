@@ -186,28 +186,35 @@ Work Log:
 - Pushed changes to GitHub remote (`origin main`).
 
 ---
-Task ID: 6
+Task ID: 7
 Agent: Antigravity
-Task: Implement manual social battery adjustment in the Partners tab only for real-time accuracy tuning.
+Task: In-depth security audit and defense-in-depth code hardening across all 14 findings.
 
 Work Log:
-- Implemented real-time Social Battery manual adjustment in the Partners tab:
-  - Added pure helpers in `src/lib/partner-intelligence.ts`: `extractBatteryOverride`, `setBatteryOverrideTag`, and `getBatteryScoreForPercentage`.
-  - Refactored `calculateEnergyBattery` to prioritize manual override when present in `day_entries.tags`, returning self-reported percentage and `isManual: true`.
-  - Added `isManual?: boolean` property to `BatteryScore` interface.
-  - Enhanced `src/components/app/partner-view.tsx` with an inline adjustment controller inside the "Estimated Energy & Social Battery" card:
-    - Added an "Estimate inaccurate? Adjust battery" trigger button.
-    - Added an interactive range slider (10% to 100%) with live percentage display.
-    - Added 5 instant quick preset pills: *Very Low (15%)*, *Low (30%)*, *Moderate (55%)*, *High (75%)*, *Peak (95%)*.
-    - Added "Adjusted by Her 💕" visual pill badging when overridden.
-    - Added a 1-tap "Reset auto" button to restore algorithmic calculation.
-    - Persisted changes to vault via `/api/days` using the `battery:override:<percentage>` tag.
+- Conducted deep vulnerability and architectural security assessment across authentication, session lifecycle, cryptographic boundaries, PWA offline storage, HTTP response headers, injection vectors, and dependency trees.
+- Hardened Authentication & DoS defenses:
+  - Scoped brute-force failed login counters to individual client IP addresses using an in-memory sliding window (`src/lib/lockout.ts`, `src/app/api/auth/login/route.ts`).
+  - Raised global database lockout threshold to a 25-failure emergency circuit-breaker, eliminating single-IP Denial of Service against legitimate owners.
+  - Enforced minimum 4-digit PIN requirement (`min(4)` up to `max(32)`) in backend Zod schemas (`setup/route.ts`, `rotate/route.ts`) and frontend forms (`vault-forms.tsx`).
+  - Added optional `SETUP_TOKEN` onboarding protection to `POST /api/auth/setup` to prevent unauthenticated vault claim races during first-time production deployments.
+  - Added Sudo Mode to `POST /api/reset` requiring re-authenticating with the current vault PIN via Argon2id before wiping records, updating `settings-view.tsx` with a PIN prompt dialog.
+- Hardened Client Privacy & Anti-Surveillance:
+  - Updated PWA Service Worker (`public/sw.js`) to exclude authenticated HTML navigation streams from permanent `CacheStorage`, preventing sensitive cycle history, symptoms, and notes from being cached in plaintext.
+  - Enhanced `signOut()` in `settings-view.tsx` to actively purge all browser `CacheStorage` instances and clear pending mutation queues in `localStorage['ourcycle.queue']`.
+- Hardened Request Validation & Injection Prevention:
+  - Neutralized CSV Formula Injection (CWE-1236) in `src/app/api/export/route.ts` with `csvCell()` escaping that prepends a single quote to cells beginning with formula triggers (`=`, `+`, `-`, `@`, `\t`, `\r`).
+  - Added `Cache-Control: no-store, no-cache, must-revalidate, private` to `/api/export` responses.
+  - Hardened `isSameOrigin()` in `src/lib/api-helpers.ts` with `Sec-Fetch-Site: cross-site` detection and `x-forwarded-host` reverse proxy inspection. Added origin check and IP rate limiting to `POST /api/auth/login`.
+- Hardened Security Headers & Infrastructure:
+  - Injected defensive security headers in `next.config.ts` and `src/proxy.ts`: `X-Frame-Options: DENY` (clickjacking protection), `Content-Security-Policy` with `frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, and `Permissions-Policy`.
+  - Moved `sharp` to `devDependencies` and upgraded to `^0.35.5`, eliminating native `libvips` memory corruption CVEs from production builds.
+  - Sanitized `/api/health` error output to prevent leaking PostgreSQL connection strings or database schemas.
+  - Added `{ mode: 0o600 }` to file write calls in `LocalFileStore` (`src/lib/local-store.ts`).
+  - Enabled strict TypeScript compilation checks in `next.config.ts` by removing `ignoreBuildErrors: true` and setting `reactStrictMode: true`.
 - Testing & Quality Verification:
-  - Added 3 new Vitest unit tests in `tests/partner-intelligence.test.ts` verifying tag parsing, clamping, tag replacement, and manual override precedence (88/88 tests passing).
-  - TypeScript compiler (`npx tsc --noEmit`): clean with 0 errors.
-  - Next.js production build (`npm run build`): compiled cleanly in Turbopack.
-- Updated all system documentation files (`README.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `worklog.md`).
+  - Added 4 automated unit tests in `tests/api.test.ts` covering CSV formula sanitization, Cache-Control headers, sudo reset verification, and setup minimum PIN length.
+  - Vitest test suite (`npm test`): 92/92 tests passing across 6 test files.
+  - ESLint (`npm run lint`): 0 errors, 0 warnings.
+  - Next.js production build (`npm run build`): compiled cleanly with Turbopack and 0 errors.
+- Updated all system documentation files (`SECURITY.md`, `API.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `README.md`, `worklog.md`).
 - Pushed changes to GitHub remote (`origin main`).
-
-
-

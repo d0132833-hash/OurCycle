@@ -7,7 +7,7 @@ import {
   signSession,
   verifyPassphrase,
 } from '@/lib/crypto'
-import { badRequest, readJson, tooMany } from '@/lib/api-helpers'
+import { badRequest, checkRateLimit, getClientIp, isSameOrigin, readJson, tooMany } from '@/lib/api-helpers'
 import { getLockState, recordLoginFailure, recordLoginSuccess } from '@/lib/lockout'
 import { z } from 'zod'
 
@@ -16,11 +16,20 @@ export const dynamic = 'force-dynamic'
 const bodySchema = z.object({ code: z.string().min(1) })
 
 export async function POST(req: NextRequest) {
+  if (!isSameOrigin(req)) {
+    return NextResponse.json({ error: 'Invalid origin' }, { status: 403 })
+  }
+
+  const ip = getClientIp(req)
+  if (!checkRateLimit(`login-ip:${ip}`, 20, 60)) {
+    return tooMany(60)
+  }
+
   const parsed = bodySchema.safeParse(await readJson(req))
   if (!parsed.success) return badRequest('Invalid input')
 
-  // 5 failed attempts → 10-minute lock (in-memory + DB counter)
-  const lock = await getLockState()
+  // 5 failed attempts per IP → 10-minute lock (sliding IP window + DB circuit breaker)
+  const lock = await getLockState(ip)
   if (lock.locked) return tooMany(lock.retryAfterSec)
 
   const store = getStore()
@@ -33,12 +42,12 @@ export async function POST(req: NextRequest) {
   }
 
   if (!verifyPassphrase(parsed.data.code, secret.passphrase_hash)) {
-    await recordLoginFailure()
+    await recordLoginFailure(ip)
     // generic error copy only — never say which factor failed
     return NextResponse.json({ error: 'Incorrect vault PIN' }, { status: 401 })
   }
 
-  await recordLoginSuccess()
+  await recordLoginSuccess(ip)
   const res = NextResponse.json({ ok: true })
   res.cookies.set(
     'oc_session',

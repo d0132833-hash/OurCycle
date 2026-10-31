@@ -34,8 +34,12 @@ export async function proxy(req: NextRequest) {
     res = NextResponse.next()
   }
 
-  // Privacy: no search-engine indexing anywhere (header + meta + robots.txt)
-  res.headers.set('X-Robots-Tag', 'noindex, nofollow')
+  // Privacy & Defensive Security Headers (SEC-06)
+  res.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive')
+  res.headers.set('X-Frame-Options', 'DENY')
+  res.headers.set('X-Content-Type-Options', 'nosniff')
+  res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()')
 
   // 30-day sliding refresh: re-issue the cookie when it is older than 7 days
   if (payload && secret && Math.floor(Date.now() / 1000) - payload.iat > 7 * 86400) {

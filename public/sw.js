@@ -1,16 +1,12 @@
-/* Our Cycle service worker — app-shell cache.
-   - Navigations: network-first (always fresh when online), cached copy when
-     offline, /offline as last resort.
+/* Our Cycle service worker — privacy-preserving app-shell cache.
    - Immutable static assets: cache-first.
-   - API calls and non-GET requests are NEVER cached; day-log writes made
-     offline are queued client-side and replayed on reconnect. */
+   - Navigations: network-first (always fresh when online), /offline as safe fallback.
+   - Sensitive authenticated health data (RSC streams, HTML payloads, API responses)
+     are NEVER persisted in CacheStorage to protect privacy on shared/offline devices.
+   - Day-log writes made offline are queued client-side and replayed on reconnect. */
 
-const VERSION = 'our-cycle-v1.1'
+const VERSION = 'our-cycle-v1.2'
 const APP_SHELL = [
-  '/',
-  '/calendar',
-  '/insights',
-  '/settings',
   '/offline',
   '/manifest.webmanifest',
   '/icons/icon-192.png',
@@ -40,21 +36,17 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return // writes always hit the network
   const url = new URL(req.url)
   if (url.origin !== location.origin) return
-  if (url.pathname.startsWith('/api/')) return // never cache her data
+  if (url.pathname.startsWith('/api/')) return // never cache API responses
 
+  // Navigation requests: always fetch live so sensitive reproductive data is never cached in CacheStorage
   if (req.mode === 'navigate') {
     event.respondWith(
-      fetch(req)
-        .then((res) => {
-          const copy = res.clone()
-          caches.open(VERSION).then((cache) => cache.put(req, copy))
-          return res
-        })
-        .catch(() => caches.match(req).then((hit) => hit || caches.match('/offline'))),
+      fetch(req).catch(() => caches.match('/offline')),
     )
     return
   }
 
+  // Static immutable assets & icons
   if (url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/icons/')) {
     event.respondWith(
       caches.match(req).then(
@@ -73,5 +65,8 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('message', (event) => {
   if (event.data && event.data.action === 'skipWaiting') {
     self.skipWaiting()
+  }
+  if (event.data && event.data.action === 'clearCache') {
+    caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
   }
 })

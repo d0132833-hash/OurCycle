@@ -20,21 +20,22 @@ All application routes are served by Next.js Server Route Handlers located under
 
 #### `POST /api/auth/setup`
 Initializes the vault with an Argon2id-hashed numerical PIN on first run.
-- **Request Body**: `{ "code": "string (numerical digits only, min 4 digits)" }`
+- **Request Body**: `{ "code": "string (numerical digits only, 4–32 digits)", "setupToken": "optional string" }`
 - **Response**: `{ "ok": true }` + `Set-Cookie: oc_session`
-- **Errors**: `400 Bad Request`, `409 Conflict` (if vault already created)
+- **Errors**: `400 Bad Request`, `401 Unauthorized` (if `SETUP_TOKEN` mismatch), `409 Conflict` (if vault already created)
 
 #### `POST /api/auth/login`
 Unlocks the vault with the numerical PIN.
 - **Request Body**: `{ "code": "string (numerical digits)" }`
-- **Rate Limit**: 5 failed attempts locks the vault for 10 minutes (returns `429 Too Many Requests`).
+- **Rate Limit & Lockout**: 5 failed attempts per client IP locks that IP for 10 minutes (returns `429 Too Many Requests`).
 - **Response**: `{ "ok": true }` + `Set-Cookie: oc_session`
-- **Errors**: `401 Unauthorized`
+- **Errors**: `401 Unauthorized`, `403 Forbidden` (cross-site origin), `429 Too Many Requests`
 
 #### `POST /api/auth/rotate`
-Rotates the vault PIN and increments `session_epoch`. Invalidate all previously issued sessions across all devices.
-- **Request Body**: `{ "current": "string", "next": "string (numerical digits only, min 4 digits)" }`
+Rotates the vault PIN and increments `session_epoch`. Invalidates all previously issued sessions across all devices.
+- **Request Body**: `{ "current": "string", "next": "string (numerical digits only, 4–32 digits)" }`
 - **Response**: `{ "ok": true }` + fresh `Set-Cookie: oc_session`
+- **Errors**: `400 Bad Request`, `401 Unauthorized`, `429 Too Many Requests`
 
 #### `POST /api/auth/logout`
 Clears the session cookie.
@@ -150,6 +151,8 @@ Generates and downloads a discreet partner-care companion RFC 5545 iCalendar (`.
 
 #### `GET /api/export?format=json|csv`
 Exports the complete historical database archive as a structured download.
+- **Headers**: `Cache-Control: no-store, no-cache, must-revalidate, private` (never cached by intermediary proxies or browsers).
+- **Security**: In CSV mode, cells starting with formula triggers (`=`, `+`, `-`, `@`, `\t`, `\r`) are automatically escaped with a leading single quote (`'`) to neutralize CSV Formula Injection (CWE-1236).
 
 ---
 
@@ -163,4 +166,7 @@ Updates settings (e.g. `cycle_length_override: 28` or `timezone: "America/New_Yo
 
 #### `POST /api/reset`
 Wipes all period, day, and prediction data while preserving the vault password hash.
+- **Security (Sudo Mode)**: Requires re-authenticating with the current vault PIN in the request body: `{ "code": "string" }`.
+- **Rate Limit**: 5 attempts per 5 minutes per IP.
+- **Errors**: `400 Bad Request`, `401 Unauthorized` (incorrect PIN).
 

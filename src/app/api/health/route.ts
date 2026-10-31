@@ -17,10 +17,11 @@ export async function GET() {
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
+    console.error('[HEALTH CHECK ERROR]', error instanceof Error ? error.message : error)
     return NextResponse.json(
       {
         status: 'unhealthy',
-        error: error instanceof Error ? error.message : 'Unknown database error',
+        error: 'Database connection unavailable',
         timestamp: new Date().toISOString(),
       },
       { status: 503 },

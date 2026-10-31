@@ -17,6 +17,9 @@ export function strengthOf(code: string): { score: 0 | 1 | 2 | 3 | 4; label: str
   if (!/^\d+$/.test(code)) {
     return { score: 0, label: 'Numerical digits only', color: 'bg-rose-400' }
   }
+  if (code.length < 4) {
+    return { score: 1, label: 'At least 4 digits required', color: 'bg-amber-400' }
+  }
   return { score: 4, label: 'Valid PIN', color: 'bg-emerald-500' }
 }
 
@@ -153,6 +156,10 @@ export function SetupForm() {
       setError('PIN must contain numbers only')
       return
     }
+    if (code.length < 4) {
+      setError('PIN must be at least 4 digits')
+      return
+    }
     if (code !== confirm) {
       setError('The two PIN codes do not match')
       return
@@ -227,6 +234,10 @@ export function RotateForm() {
     if (busy) return
     if (!/^\d+$/.test(next)) {
       setMsg('New PIN must contain numbers only')
+      return
+    }
+    if (next.length < 4) {
+      setMsg('New PIN must be at least 4 digits')
       return
     }
     setBusy(true)

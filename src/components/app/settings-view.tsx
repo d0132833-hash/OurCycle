@@ -135,6 +135,7 @@ export function SettingsView({
   const [savingEdit, setSavingEdit] = useState(false)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [resetDialogOpen, setResetDialogOpen] = useState(false)
+  const [resetPin, setResetPin] = useState('')
   const [resetting, setResetting] = useState(false)
 
   // Add period state
@@ -289,11 +290,23 @@ export function SettingsView({
   }
 
   async function resetAllData() {
+    if (!resetPin) {
+      toast.error('Please enter your vault PIN to confirm')
+      return
+    }
     setResetting(true)
     try {
-      const res = await fetch('/api/reset', { method: 'POST' })
-      if (!res.ok) throw new Error('Could not reset data')
+      const res = await fetch('/api/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: resetPin }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        throw new Error(data?.error || 'Could not reset data')
+      }
       setPeriods([])
+      setResetPin('')
       setResetDialogOpen(false)
       toast.success('All cycle and symptom data has been reset')
       router.refresh()
@@ -305,12 +318,28 @@ export function SettingsView({
   }
 
   function downloadExport(format: 'json' | 'csv') {
-    window.open(`/api/export?format=${format}`, '_blank')
+    window.open(`/api/export?format=${format}`, '_blank', 'noopener,noreferrer')
   }
 
   async function signOut() {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    window.location.href = '/login'
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+    } catch {}
+
+    // Security & Anti-Surveillance: Clear browser-persisted caches and offline queue on sign out
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('ourcycle.queue')
+        if ('caches' in window) {
+          const keys = await caches.keys()
+          await Promise.all(keys.map((k) => caches.delete(k)))
+        }
+        if (navigator.serviceWorker?.controller) {
+          navigator.serviceWorker.controller.postMessage({ action: 'clearCache' })
+        }
+      } catch {}
+      window.location.href = '/login'
+    }
   }
 
   return (
@@ -852,19 +881,37 @@ export function SettingsView({
       </AlertDialog>
 
       {/* Reset Data Confirmation */}
-      <AlertDialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+      <AlertDialog
+        open={resetDialogOpen}
+        onOpenChange={(open) => {
+          setResetDialogOpen(open)
+          if (!open) setResetPin('')
+        }}
+      >
         <AlertDialogContent className="max-w-xs rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="font-display text-base text-rose-600">Reset all tracking data?</AlertDialogTitle>
             <AlertDialogDescription className="text-xs">
-              This will erase all logged periods, symptoms, and forecasts. Your vault PIN will remain active.
+              This will permanently erase all logged periods, symptoms, and forecasts. Enter your vault PIN to confirm.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="py-2">
+            <Input
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={resetPin}
+              onChange={(e) => setResetPin(e.target.value.replace(/\D/g, ''))}
+              placeholder="Vault PIN"
+              className="h-10 text-center font-mono tracking-widest text-base"
+              autoFocus
+            />
+          </div>
           <AlertDialogFooter className="flex-row gap-2 pt-2">
             <AlertDialogCancel className="flex-1 rounded-xl text-xs">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={resetAllData}
-              disabled={resetting}
+              disabled={resetting || !resetPin}
               className="flex-1 rounded-xl bg-rose-600 text-white text-xs hover:bg-rose-700"
             >
               {resetting ? 'Resetting…' : 'Wipe all data'}

@@ -45,16 +45,42 @@ export function isValidTimezone(tz: string): boolean {
   }
 }
 
+// --- client IP extraction ---------------------------------------------------
+
+export function getClientIp(req: Request): string {
+  const forwarded = req.headers.get('x-forwarded-for')
+  if (forwarded) {
+    const first = forwarded.split(',')[0]?.trim()
+    if (first) return first
+  }
+  const realIp = req.headers.get('x-real-ip')
+  if (realIp) return realIp.trim()
+  return '127.0.0.1'
+}
+
 // --- CSRF origin validation --------------------------------------------------
 
 export function isSameOrigin(req: Request): boolean {
+  // Reject explicitly cross-site browser fetches immediately
+  const fetchSite = req.headers.get('sec-fetch-site')
+  if (fetchSite === 'cross-site') {
+    return false
+  }
+
   const origin = req.headers.get('origin')
-  if (!origin) return true
+  if (!origin) {
+    // Non-browser clients, automated test suites, or same-origin direct navigations
+    return true
+  }
+
   const host = req.headers.get('host')
-  if (!host) return true
+  const forwardedHost = req.headers.get('x-forwarded-host')
+  const targetHost = forwardedHost || host
+  if (!targetHost) return true
+
   try {
     const originHost = new URL(origin).host
-    return originHost === host
+    return originHost === targetHost || (host ? originHost === host : false)
   } catch {
     return false
   }
@@ -66,6 +92,14 @@ const rateLimits = new Map<string, { count: number; resetAt: number }>()
 
 export function checkRateLimit(key: string, maxRequests: number, windowSec: number): boolean {
   const now = Date.now()
+
+  // Occasional pruning to prevent memory growth
+  if (rateLimits.size > 2000) {
+    for (const [k, v] of rateLimits.entries()) {
+      if (now > v.resetAt) rateLimits.delete(k)
+    }
+  }
+
   const current = rateLimits.get(key)
   if (!current || now > current.resetAt) {
     rateLimits.set(key, { count: 1, resetAt: now + windowSec * 1000 })

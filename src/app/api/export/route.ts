@@ -4,6 +4,25 @@ import { getSession, unauthorizedResponse } from '@/lib/api-auth'
 
 export const dynamic = 'force-dynamic'
 
+/**
+ * Sanitizes a CSV cell to prevent CSV Formula Injection (CWE-1236).
+ * Prepends a single quote if the value begins with formula characters (=, +, -, @, \t, \r).
+ */
+function csvCell(val: unknown): string {
+  if (val === null || val === undefined) return '""'
+  const str = String(val)
+  let escaped = str.replace(/"/g, '""')
+  if (/^[=+\-@\t\r]/.test(escaped.trimStart())) {
+    escaped = `'${escaped}`
+  }
+  return `"${escaped}"`
+}
+
+function csvNum(val: unknown): string {
+  if (val === null || val === undefined || val === '') return ''
+  return String(val)
+}
+
 export async function GET(req: NextRequest) {
   if (!(await getSession())) return unauthorizedResponse()
 
@@ -24,15 +43,14 @@ export async function GET(req: NextRequest) {
     lines.push('### PERIOD EPISODES')
     lines.push('id,start_date,end_date,flow,created_at')
     for (const p of periods) {
-      lines.push(`"${p.id}","${p.start_date}","${p.end_date ?? ''}","${p.flow ?? ''}","${p.created_at ?? ''}"`)
+      lines.push(`${csvCell(p.id)},${csvCell(p.start_date)},${csvCell(p.end_date)},${csvCell(p.flow)},${csvCell(p.created_at)}`)
     }
 
     lines.push('', '### DAILY SYMPTOM & MOOD LOGS')
     lines.push('date,flow,mood,energy,libido,cramps,headache,back_pain,breast_tenderness,acne,bloating,fatigue,bbt,weight,note')
     for (const d of days) {
-      const escapedNote = (d.note ?? '').replace(/"/g, '""')
       lines.push(
-        `"${d.date}","${d.flow ?? ''}",${d.mood ?? ''},${d.energy ?? ''},${d.libido ?? ''},${d.cramps ?? ''},${d.headache ?? ''},${d.back_pain ?? ''},${d.breast_tenderness ?? ''},${d.acne ?? ''},${d.bloating ?? ''},${d.fatigue ?? ''},${d.bbt ?? ''},${d.weight ?? ''},"${escapedNote}"`,
+        `${csvCell(d.date)},${csvCell(d.flow)},${csvNum(d.mood)},${csvNum(d.energy)},${csvNum(d.libido)},${csvNum(d.cramps)},${csvNum(d.headache)},${csvNum(d.back_pain)},${csvNum(d.breast_tenderness)},${csvNum(d.acne)},${csvNum(d.bloating)},${csvNum(d.fatigue)},${csvNum(d.bbt)},${csvNum(d.weight)},${csvCell(d.note)}`,
       )
     }
 
@@ -41,6 +59,8 @@ export async function GET(req: NextRequest) {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
         'Content-Disposition': `attachment; filename="ourcycle-export-${new Date().toISOString().slice(0, 10)}.csv"`,
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+        'Pragma': 'no-cache',
       },
     })
   }
@@ -63,6 +83,8 @@ export async function GET(req: NextRequest) {
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
       'Content-Disposition': `attachment; filename="ourcycle-export-${new Date().toISOString().slice(0, 10)}.json"`,
+      'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+      'Pragma': 'no-cache',
     },
   })
 }

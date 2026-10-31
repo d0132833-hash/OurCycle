@@ -78,9 +78,12 @@ export class LocalFileStore implements Store {
     try {
       const dir = path.dirname(this.filePath)
       if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true })
+        fs.mkdirSync(dir, { recursive: true, mode: 0o700 })
       }
-      fs.writeFileSync(this.filePath, JSON.stringify(data, null, 2), 'utf-8')
+      fs.writeFileSync(this.filePath, JSON.stringify(data, null, 2), {
+        encoding: 'utf-8',
+        mode: 0o600,
+      })
     } catch {
       // Ignore write errors in restricted envs
     }
