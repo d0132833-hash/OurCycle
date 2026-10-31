@@ -578,6 +578,74 @@ describe('Rigorous Feature & API Test Suite', () => {
 
       expect((await store.listDays('2026-03-20', '2026-03-22')).length).toBe(0)
     })
+
+    it('automatically starts period and logs following days when flow is logged in /api/days', async () => {
+      await store.updateSettings({ period_length: 5 })
+
+      // User logs day with medium flow (e.g. from DaySheet / Calendar)
+      const dayReq = new NextRequest('http://localhost:3000/api/days', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' },
+        body: JSON.stringify({
+          date: '2026-04-01',
+          flow: 'medium',
+          is_period_start: true,
+          period_length: 5,
+        }),
+      })
+      const dayRes = await daysPost(dayReq)
+      expect(dayRes.status).toBe(201)
+
+      // Period episode must be created from 2026-04-01 to 2026-04-05
+      const periods = await store.listPeriods()
+      const ep = periods.find((p) => p.start_date === '2026-04-01')
+      expect(ep).toBeDefined()
+      expect(ep?.end_date).toBe('2026-04-05')
+      expect(ep?.flow).toBe('medium')
+
+      // All 5 days must be logged in day_entries automatically
+      const days = await store.listDays('2026-04-01', '2026-04-05')
+      expect(days.length).toBe(5)
+      expect(days.map((d) => d.date)).toEqual([
+        '2026-04-01',
+        '2026-04-02',
+        '2026-04-03',
+        '2026-04-04',
+        '2026-04-05',
+      ])
+      days.forEach((d) => {
+        expect(d.flow).toBe('medium')
+      })
+    })
+
+    it('allows upserting period on existing start date via /api/periods with upsert=true', async () => {
+      await store.updateSettings({ period_length: 4 })
+      const postReq = new NextRequest('http://localhost:3000/api/periods', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' },
+        body: JSON.stringify({ start_date: '2026-05-01', flow: 'light' }),
+      })
+      const postRes = await periodsPost(postReq)
+      expect(postRes.status).toBe(201)
+
+      // Re-start or update with upsert: true and heavy flow
+      const upsertReq = new NextRequest('http://localhost:3000/api/periods', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' },
+        body: JSON.stringify({ start_date: '2026-05-01', flow: 'heavy', upsert: true }),
+      })
+      const upsertRes = await periodsPost(upsertReq)
+      expect(upsertRes.status).toBe(200)
+      const data = await upsertRes.json()
+      expect(data.period.flow).toBe('heavy')
+
+      // Days should now have flow updated to heavy
+      const days = await store.listDays('2026-05-01', '2026-05-04')
+      expect(days.length).toBe(4)
+      days.forEach((d) => {
+        expect(d.flow).toBe('heavy')
+      })
+    })
   })
 })
 

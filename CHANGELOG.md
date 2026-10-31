@@ -199,7 +199,36 @@ All notable changes and architectural features introduced to the Our Cycle codeb
 
 ---
 
-## [0.3.1] — 2026-10-31
+## [0.3.3] — 2026-10-31
+
+### 🩸 Comprehensive Auto-Logging of Following Period Days & Calendar State Sync
+
+#### 1. Universal Automatic Multi-Day Period Logging (`/api/days` & `day-sheet.tsx`)
+- Fixed critical gap where logging flow in `DaySheet` (accessed via Calendar date tap or Today "Log today") only wrote to a single day entry without initiating a period episode or auto-logging following days.
+- Extended `POST /api/days` and `PATCH /api/days` with `is_period_start` and `period_length`.
+- When menstrual flow (`light`, `medium`, `heavy`) is logged or `is_period_start: true`, the system automatically inserts/updates the period episode in `period_logs` (`end_date = start_date + period_length - 1`), auto-upserts `day_entries` for all following days across the period cycle length, and synchronizes predictions.
+- Added a dedicated, interactive "Period start date" banner in `DaySheet` with an inline cycle length stepper (`[-] {periodLen}d [+]`), allowing instant adjustment of how many days are auto-logged.
+
+#### 2. Optimistic Instant Updates in Calendar Grid (`calendar-grid.tsx`)
+- Added local optimistic state management in `CalendarGrid` for `episodes` and `entries`.
+- When a user logs a period date in `DaySheet`, all `period_length` days immediately turn into solid period red (`#E11D48`) without any delay, flicker, or cache latency.
+- Injected `settings.period_length` from `CalendarPage` down to `CalendarGrid` and `DaySheet`.
+
+#### 3. Seamless Upsert in Period API & Ongoing Episode Priority
+- Added `upsert?: boolean` option to `POST /api/periods`, eliminating 409 Conflict errors when re-starting or updating a period starting on an existing date.
+- Adjusted ongoing episode lookup in `src/app/(app)/page.tsx` to search newest episodes first (`reverse().find`).
+- Adjusting period length on an ongoing episode in `PeriodActions` now immediately syncs and resizes the active period's end date.
+
+---
+
+## [0.3.2] — 2026-10-31
+
+### 📅 Calendar Accuracy & Multi-Month Forward Projections
+- Fixed October 31 missing bug via `getDaysInMonth(yearMonth)` using `Date.UTC`.
+- Fixed ovulation dot indicator condition in `CalendarGrid`.
+- Added multi-month forward predictions (upcoming periods, fertile windows, and ovulation) projected 3 cycles forward.
+
+---
 
 ### ✏️ Today Log Editing & System Workflow Enhancements
 

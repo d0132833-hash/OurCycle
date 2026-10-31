@@ -7,7 +7,11 @@ export const metadata = { title: 'Our Cycle' }
 
 export default async function CalendarPage() {
   const store = getStore()
-  const [episodes, entries] = await Promise.all([store.listPeriods(), store.listDays()])
+  const [episodes, entries, settings] = await Promise.all([
+    store.listPeriods(),
+    store.listDays(),
+    store.getSettings(),
+  ])
   const prediction = await computeCurrentPrediction()
 
   return (
@@ -16,7 +20,12 @@ export default async function CalendarPage() {
         <h2 className="font-display text-xl font-semibold">Calendar</h2>
         <p className="text-sm text-muted-foreground">Tap any past or today&apos;s date to log it.</p>
       </div>
-      <CalendarGrid episodes={episodes} entries={entries} prediction={prediction} />
+      <CalendarGrid
+        episodes={episodes}
+        entries={entries}
+        prediction={prediction}
+        periodLength={settings.period_length ?? prediction.predictedPeriodDuration ?? 5}
+      />
     </div>
   )
 }

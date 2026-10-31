@@ -22,6 +22,7 @@ const createSchema = z.object({
   start_date: daySchema,
   end_date: daySchema.nullable().optional(),
   flow: episodeFlowSchema.optional(),
+  upsert: z.boolean().optional(),
 })
 
 const patchSchema = z.object({
@@ -87,15 +88,28 @@ export async function POST(req: NextRequest) {
 
   if (effectiveEndDate < input.start_date)
     return badRequest('End date cannot be before the start date')
-  if (await store.hasPeriodOn(input.start_date))
+  const hasExisting = await store.hasPeriodOn(input.start_date)
+  if (hasExisting && !input.upsert) {
     return conflict('A period starting on this date already exists')
+  }
 
-  const episodeFlow = input.flow ?? 'medium'
-  const period = await store.insertPeriod({
-    start_date: input.start_date,
-    end_date: effectiveEndDate,
-    flow: episodeFlow,
-  })
+  const episodeFlow = (input.flow as PeriodEpisode['flow']) ?? 'medium'
+  let period: PeriodEpisode
+
+  if (hasExisting && input.upsert) {
+    const existing = (await store.listPeriods()).find((p) => p.start_date === input.start_date)!
+    const updated = await store.updatePeriod(existing.id, {
+      end_date: effectiveEndDate,
+      flow: episodeFlow,
+    })
+    period = updated ?? existing
+  } else {
+    period = await store.insertPeriod({
+      start_date: input.start_date,
+      end_date: effectiveEndDate,
+      flow: episodeFlow,
+    })
+  }
 
   // Auto-log following days according to the period cycle length
   const dates = dayRange(input.start_date, effectiveEndDate)
@@ -104,7 +118,7 @@ export async function POST(req: NextRequest) {
   }
 
   const prediction = await syncPredictionLog() // full recompute on every write
-  return NextResponse.json({ period, prediction }, { status: 201 })
+  return NextResponse.json({ period, prediction }, { status: hasExisting ? 200 : 201 })
 }
 
 export async function PATCH(req: NextRequest) {

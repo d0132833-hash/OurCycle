@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog'
 import { saveWithOfflineFallback } from '@/lib/client/offline-queue'
 import { DaySheet } from './day-sheet'
+import { addDays } from '@/lib/dates'
 import type { DayEntry } from '@/lib/types'
 
 function triggerHaptic() {
@@ -64,6 +65,23 @@ export function PeriodActions({
         body: JSON.stringify({ period_length: currentLen }),
       })
       if (!res.ok) throw new Error('Could not update period length')
+
+      if (ongoingEpisodeId) {
+        const pRes = await fetch('/api/periods')
+        if (pRes.ok) {
+          const pData = await pRes.json()
+          const ongoing = (pData.periods as any[])?.find((p) => p.id === ongoingEpisodeId)
+          if (ongoing) {
+            const newEnd = addDays(ongoing.start_date, currentLen - 1)
+            await fetch('/api/periods', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: ongoingEpisodeId, end_date: newEnd }),
+            })
+          }
+        }
+      }
+
       toast.success(`Period cycle length set to ${currentLen} days`)
       setAdjustOpen(false)
       router.refresh()
@@ -79,7 +97,10 @@ export function PeriodActions({
     setBusy(true)
     triggerHaptic()
     try {
-      const where = await saveWithOfflineFallback('period-start', { start_date: today })
+      const where = await saveWithOfflineFallback('period-start', {
+        start_date: today,
+        upsert: true,
+      })
       router.refresh()
 
       toast.success(
@@ -367,7 +388,13 @@ export function PeriodActions({
         </DialogContent>
       </Dialog>
 
-      <DaySheet date={today} entry={todayEntry} open={sheetOpen} onOpenChange={setSheetOpen} />
+      <DaySheet
+        date={today}
+        entry={todayEntry}
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        periodLength={currentLen}
+      />
     </div>
   )
 }

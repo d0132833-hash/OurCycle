@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Sparkles, Plus, Minus, Moon, Droplet } from 'lucide-react'
+import { Sparkles, Plus, Minus, Moon, Droplet, Droplets } from 'lucide-react'
 import {
   Drawer,
   DrawerContent,
@@ -21,6 +21,7 @@ import {
   type DayEntry,
 } from '@/lib/types'
 import { saveWithOfflineFallback } from '@/lib/client/offline-queue'
+import { addDays } from '@/lib/dates'
 import { fmtShort } from './phase-copy'
 
 const FLOW_LABEL: Record<string, string> = {
@@ -121,20 +122,58 @@ interface Props {
   entry: DayEntry | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  periodLength?: number
+  onSaved?: (
+    date: string,
+    flow: string | null,
+    isPeriodStart: boolean,
+    periodLength: number,
+    draft: DayDraft,
+  ) => void
 }
 
-export function DaySheet({ date, entry, open, onOpenChange }: Props) {
+export function DaySheet({
+  date,
+  entry,
+  open,
+  onOpenChange,
+  periodLength = 5,
+  onSaved,
+}: Props) {
   const router = useRouter()
   const [draft, setDraft] = useState<DayDraft>(EMPTY)
   const [saving, setSaving] = useState(false)
+  const [isPeriodStart, setIsPeriodStart] = useState(false)
+  const [periodLen, setPeriodLen] = useState(periodLength)
 
   useEffect(() => {
-    if (open) setDraft(fromEntry(entry))
-  }, [open, entry])
+    if (open) {
+      setDraft(fromEntry(entry))
+      setPeriodLen(periodLength)
+      const hasBleeding =
+        entry?.flow === 'light' || entry?.flow === 'medium' || entry?.flow === 'heavy'
+      setIsPeriodStart(hasBleeding)
+    }
+  }, [open, entry, periodLength])
 
   const set = <K extends keyof DayDraft>(k: K, v: DayDraft[K]) => {
     triggerHaptic()
     setDraft((d) => ({ ...d, [k]: v }))
+  }
+
+  const handleFlowSelect = (f: string) => {
+    triggerHaptic()
+    if (draft.flow === f) {
+      set('flow', null)
+      setIsPeriodStart(false)
+    } else {
+      set('flow', f)
+      if (f === 'light' || f === 'medium' || f === 'heavy') {
+        setIsPeriodStart(true)
+      } else {
+        setIsPeriodStart(false)
+      }
+    }
   }
 
   const dirty = useMemo(
@@ -252,10 +291,20 @@ export function DaySheet({ date, entry, open, onOpenChange }: Props) {
 
       payload.water_glasses = draft.water_glasses
       payload.note = draft.note.trim() !== '' ? draft.note.trim() : null
+      payload.is_period_start = isPeriodStart
+      if (isPeriodStart) {
+        payload.period_length = periodLen
+      }
 
       const where = await saveWithOfflineFallback('day', payload)
+      onSaved?.(date, draft.flow, isPeriodStart, periodLen, draft)
+
       toast.success(
-        where === 'queued' ? 'Saved offline — syncs automatically' : 'Day saved',
+        where === 'queued'
+          ? 'Saved offline — syncs automatically'
+          : isPeriodStart
+            ? `Period started (${periodLen} days auto-logged)`
+            : 'Day saved',
       )
       onOpenChange(false)
       router.refresh()
@@ -339,20 +388,95 @@ export function DaySheet({ date, entry, open, onOpenChange }: Props) {
           </section>
 
           {/* Flow */}
-          <section>
-            <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Flow</h3>
+          <section className="space-y-3">
+            <h3 className="text-sm font-semibold text-muted-foreground">Flow</h3>
             <div className="flex flex-wrap gap-2">
               {DAY_FLOWS.map((f) => (
                 <button
                   key={f}
                   type="button"
-                  onClick={() => set('flow', draft.flow === f ? null : f)}
+                  onClick={() => handleFlowSelect(f)}
                   className={`chip ${draft.flow === f ? 'chip-selected' : ''}`}
                 >
                   {FLOW_LABEL[f]}
                 </button>
               ))}
             </div>
+
+            {/* Period Start & Auto-log Banner */}
+            {(draft.flow === 'light' || draft.flow === 'medium' || draft.flow === 'heavy') && date && (
+              <div className="rounded-2xl border border-primary/25 bg-gradient-to-br from-rose-50/70 to-pink-50/40 dark:from-rose-950/30 dark:to-pink-950/10 p-3.5 space-y-2.5 transition-all">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Droplets className="h-4 w-4 text-primary fill-primary/30" />
+                    <div>
+                      <span className="text-sm font-semibold text-foreground block">
+                        Period start date
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">
+                        Auto-logs following days
+                      </span>
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isPeriodStart}
+                      onChange={(e) => {
+                        triggerHaptic()
+                        setIsPeriodStart(e.target.checked)
+                      }}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-stone-300 dark:bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary shadow-inner"></div>
+                  </label>
+                </div>
+
+                {isPeriodStart && (
+                  <div className="pt-2 border-t border-primary/15 space-y-2">
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Automatically logs <strong className="text-primary font-semibold">{periodLen} days</strong> ({fmtShort(date)} to {fmtShort(addDays(date, periodLen - 1))}) according to period cycle length.
+                    </p>
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-xs font-medium text-foreground">
+                        Period cycle length:
+                      </span>
+                      <div className="flex items-center gap-2 bg-white/80 dark:bg-zinc-800/80 px-2 py-1 rounded-xl border border-primary/20 shadow-2xs">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 rounded-lg text-primary hover:bg-primary/10"
+                          onClick={() => {
+                            triggerHaptic()
+                            setPeriodLen((l) => Math.max(1, l - 1))
+                          }}
+                          disabled={periodLen <= 1}
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <span className="text-xs font-bold w-6 text-center text-foreground">
+                          {periodLen}d
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 rounded-lg text-primary hover:bg-primary/10"
+                          onClick={() => {
+                            triggerHaptic()
+                            setPeriodLen((l) => Math.min(14, l + 1))
+                          }}
+                          disabled={periodLen >= 14}
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </section>
 
           {/* Scales: mood, energy, libido */}

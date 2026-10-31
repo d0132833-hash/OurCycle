@@ -37,11 +37,13 @@ export default async function TodayPage() {
 
   const ongoing =
     prediction.bleedingToday && prediction.anchorStart
-      ? (await store.listPeriods()).find(
-          (e) =>
-            e.start_date <= prediction.today &&
-            (e.end_date === null || e.end_date >= prediction.today),
-        ) ?? null
+      ? [...(await store.listPeriods())]
+          .reverse()
+          .find(
+            (e) =>
+              e.start_date <= prediction.today &&
+              (e.end_date === null || e.end_date >= prediction.today),
+          ) ?? null
       : null
 
   return (

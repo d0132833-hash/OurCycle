@@ -52,23 +52,25 @@ Returns all logged period episodes sorted ascending by `start_date`.
 #### `POST /api/periods`
 Records a new period start or completed episode. Triggers an automatic recompute of all future forecasts and prediction logs.
 - When `end_date` is omitted or null, `end_date` is automatically calculated according to the configured `period_length` (`start_date + period_length - 1`), and the first date and all following days in the duration are automatically logged into `day_entries` with the episode's flow.
+- Supports `upsert: true` to update existing period on that start date without 409 conflict errors.
 - **Request Body**:
   ```json
   {
     "start_date": "YYYY-MM-DD",
     "end_date": "YYYY-MM-DD | null (optional; auto-calculated from period_length if omitted)",
-    "flow": "spotting | light | medium | heavy"
+    "flow": "spotting | light | medium | heavy",
+    "upsert": "boolean (optional, default false)"
   }
   ```
-- **Response**: `{ "period": PeriodEpisode, "prediction": Prediction }` (`201 Created`)
+- **Response**: `{ "period": PeriodEpisode, "prediction": Prediction }` (`201 Created` or `200 OK` on upsert)
 
 #### `PATCH /api/periods`
-Updates an existing period episode (e.g. logging period end date or amending flow).
+Updates an existing period episode (e.g. logging period end date or amending flow). Trims and cleans up trailing auto-logged days when a period ends early.
 - **Request Body**: `{ "id": "string", "end_date": "YYYY-MM-DD | null", "flow": "..." }`
 - **Response**: `{ "period": PeriodEpisode, "prediction": Prediction }`
 
 #### `DELETE /api/periods?id=<uuid>`
-Removes an episode and re-evaluates forecasting baseline.
+Removes an episode and re-evaluates forecasting baseline. Automatically cascades cleanup to remove auto-logged day flow entries.
 - **Response**: `{ "ok": true, "prediction": Prediction }`
 
 ---
@@ -81,11 +83,14 @@ Retrieves daily logs for the requested date window.
 
 #### `POST /api/days` & `PATCH /api/days`
 Upsert-merge semantics: updates only the specified fields for that calendar day without overwriting omitted metrics.
+- **Automatic Period Start**: When menstrual flow (`light`, `medium`, `heavy`) is logged or `is_period_start: true`, the API automatically ensures a period episode in `period_logs` is created/updated from `date` to `date + period_length - 1` and auto-upserts `day_entries` for all following days across the period duration with that flow.
 - **Request Body**:
   ```json
   {
     "date": "YYYY-MM-DD",
     "flow": "none | spotting | light | medium | heavy",
+    "is_period_start": "boolean (optional; defaults to true when menstrual flow logged on a new date)",
+    "period_length": "1-14 (optional; defaults to configured settings.period_length)",
     "mood": 1-5,
     "energy": 1-5,
     "libido": 1-5,

@@ -269,3 +269,41 @@ Work Log:
   - Vitest test suite (`npm test`): 98/98 tests passing across 6 test files.
   - Production build (`npm run build`): compiled cleanly with Turbopack and 0 errors.
 - Pushed changes to GitHub remote (`origin main`).
+
+---
+Task ID: 6
+Agent: Antigravity
+Task: End-to-end fix for automatic following days period logging across DaySheet, CalendarGrid, and API routes.
+
+Work Log:
+- Diagnosed root cause of "automatic following days logging isn't working":
+  - In `DaySheet` (accessed by clicking any date on Calendar or clicking "Log today" on Today view), choosing Flow only called `POST /api/days`.
+  - `POST /api/days` previously only persisted a single day entry in `day_entries` without creating a period episode in `period_logs` and without auto-logging following days.
+  - In `CalendarGrid`, state relied entirely on Next.js server components re-rendering from `router.refresh()` without optimistic local state, and `periodLength` wasn't passed from `CalendarPage`.
+  - In `POST /api/periods`, duplicate start dates returned a hard 409 Conflict error toast instead of gracefully updating the period and its auto-logged days.
+- Resolved across the full stack:
+  1. `src/app/api/days/route.ts`:
+     - Extended `upsertSchema` with `is_period_start?: boolean` and `period_length?: number`.
+     - When menstrual flow (`light`, `medium`, `heavy`) is logged or `is_period_start: true`, `handlePeriodSyncForDay` automatically creates/updates the period episode in `period_logs` (end date = `addDays(date, periodLength - 1)`) and automatically auto-upserts `day_entries` across all following days in range with that flow.
+     - Automatically triggers `syncPredictionLog()` for real-time forecast alignment.
+  2. `src/app/api/periods/route.ts`:
+     - Added `upsert?: boolean` option to `POST /api/periods`. When a period already exists on that date and `upsert: true` is passed, it updates the existing period's `end_date` and `flow` and auto-upserts all following days rather than returning a 409 Conflict error.
+  3. `src/components/app/day-sheet.tsx`:
+     - Added `periodLength` and `onSaved` props.
+     - Added an intuitive "Period start date" interactive banner with toggle switch and inline period cycle length adjuster (`[-] {periodLen}d [+]`).
+     - Automatically selects "Period start date" when any menstrual flow (`light`, `medium`, `heavy`) is chosen on a date.
+     - Included `is_period_start` and `period_length` in the payload and triggers `onSaved` callback.
+  4. `src/components/app/calendar-grid.tsx` & `src/app/(app)/calendar/page.tsx`:
+     - `CalendarPage` now reads `settings.period_length` and passes `periodLength` down to `CalendarGrid`.
+     - `CalendarGrid` now maintains local optimistic state (`localEpisodes`, `localEntries`) and updates all `period_length` days to solid period red `#E11D48` immediately upon saving in `DaySheet` without any delay or cache lag.
+  5. `src/components/app/period-actions.tsx`:
+     - Passed `periodLength={currentLen}` to `DaySheet`.
+     - Enhanced `startPeriod()` with `upsert: true` to prevent 409 conflict errors.
+     - Updated `saveLength()` so adjusting period length on an ongoing episode immediately updates its end date.
+  6. `src/app/(app)/page.tsx`:
+     - Updated ongoing episode lookup to use `[...(await store.listPeriods())].reverse().find(...)` to ensure the most recent ongoing episode is correctly prioritized.
+- Quality Verification:
+  - Added 2 new integration tests in `tests/comprehensive-features.test.ts` testing `POST /api/days` automatic period start and following days creation, and `/api/periods` upserting on existing start dates.
+  - Vitest test suite (`npm test`): 100/100 tests passing across 6 test files.
+  - Next.js production build (`npm run build`): compiled cleanly with 0 TypeScript/lint errors.
+- Pushed changes to GitHub remote (`origin main`).

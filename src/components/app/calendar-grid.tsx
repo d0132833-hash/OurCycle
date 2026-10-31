@@ -1,13 +1,13 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
 import { ChevronLeft, ChevronRight, Download, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { DayEntry, PeriodEpisode } from '@/lib/types'
 import type { Prediction } from '@/lib/predictions'
-import { addDays, getDaysInMonth } from '@/lib/dates'
+import { addDays, dayRange, getDaysInMonth } from '@/lib/dates'
 import { DaySheet } from './day-sheet'
 import { fmtShort } from './phase-copy'
 
@@ -15,6 +15,7 @@ interface Props {
   episodes: PeriodEpisode[]
   entries: DayEntry[]
   prediction: Prediction
+  periodLength?: number
 }
 
 type CellKind = 'period' | 'spotting' | 'predicted' | 'fertile' | 'plain'
@@ -35,30 +36,45 @@ function triggerHaptic() {
   }
 }
 
-export function CalendarGrid({ episodes, entries, prediction }: Props) {
+export function CalendarGrid({
+  episodes,
+  entries,
+  prediction,
+  periodLength = 5,
+}: Props) {
   const today = prediction.today
+  const [localEpisodes, setLocalEpisodes] = useState(episodes)
+  const [localEntries, setLocalEntries] = useState(entries)
   const [view, setView] = useState(() => today.slice(0, 7)) // YYYY-MM
   const [selected, setSelected] = useState<string | null>(null)
   const [open, setOpen] = useState(false)
   const [touchStart, setTouchStart] = useState<number | null>(null)
   const [touchEnd, setTouchEnd] = useState<number | null>(null)
 
-  const entryByDate = useMemo(() => {
-    const m = new Map<string, DayEntry>()
-    for (const e of entries) m.set(e.date, e)
-    return m
+  useEffect(() => {
+    setLocalEpisodes(episodes)
+  }, [episodes])
+
+  useEffect(() => {
+    setLocalEntries(entries)
   }, [entries])
 
+  const entryByDate = useMemo(() => {
+    const m = new Map<string, DayEntry>()
+    for (const e of localEntries) m.set(e.date, e)
+    return m
+  }, [localEntries])
+
   const episodeDay = useMemo(() => {
-    // actual logged bleeding days (ongoing episodes capped at today)
+    // actual logged bleeding days (ongoing episodes capped at today if open-ended)
     const m = new Map<string, PeriodEpisode>()
-    for (const e of episodes) {
+    for (const e of localEpisodes) {
       const end = e.end_date ?? (e.start_date <= today ? today : null)
       if (!end) continue
       for (let d = e.start_date; d <= end; d = addDays(d, 1)) m.set(d, e)
     }
     return m
-  }, [episodes, today])
+  }, [localEpisodes, today])
 
   const marks = useMemo(() => {
     const predicted = new Set<string>()
@@ -170,6 +186,93 @@ export function CalendarGrid({ episodes, entries, prediction }: Props) {
   }
 
   const selectedEntry = selected ? (entryByDate.get(selected) ?? null) : null
+
+  const handleDaySaved = (
+    savedDate: string,
+    savedFlow: string | null,
+    isPeriodStart: boolean,
+    savedPeriodLen: number,
+  ) => {
+    setLocalEntries((prev) => {
+      const map = new Map(prev.map((e) => [e.date, e]))
+      const cur = map.get(savedDate)
+      map.set(savedDate, {
+        date: savedDate,
+        flow: (savedFlow as any) ?? null,
+        mood: cur?.mood ?? null,
+        energy: cur?.energy ?? null,
+        libido: cur?.libido ?? null,
+        cramps: cur?.cramps ?? null,
+        headache: cur?.headache ?? null,
+        back_pain: cur?.back_pain ?? null,
+        breast_tenderness: cur?.breast_tenderness ?? null,
+        acne: cur?.acne ?? null,
+        bloating: cur?.bloating ?? null,
+        fatigue: cur?.fatigue ?? null,
+        bbt: cur?.bbt ?? null,
+        weight: cur?.weight ?? null,
+        sleep_hours: cur?.sleep_hours ?? null,
+        water_glasses: cur?.water_glasses ?? null,
+        exercise: cur?.exercise ?? null,
+        tags: cur?.tags ?? null,
+        note: cur?.note ?? null,
+        created_at: cur?.created_at ?? new Date().toISOString(),
+      })
+
+      if (isPeriodStart && savedFlow && savedFlow !== 'none') {
+        const endDate = addDays(savedDate, savedPeriodLen - 1)
+        const range = dayRange(savedDate, endDate)
+        for (const d of range) {
+          const existing = map.get(d)
+          if (existing) {
+            map.set(d, { ...existing, flow: savedFlow as any })
+          } else {
+            map.set(d, {
+              date: d,
+              flow: savedFlow as any,
+              mood: null,
+              energy: null,
+              libido: null,
+              cramps: null,
+              headache: null,
+              back_pain: null,
+              breast_tenderness: null,
+              acne: null,
+              bloating: null,
+              fatigue: null,
+              bbt: null,
+              weight: null,
+              sleep_hours: null,
+              water_glasses: null,
+              exercise: null,
+              tags: null,
+              note: null,
+              created_at: new Date().toISOString(),
+            })
+          }
+        }
+      }
+      return Array.from(map.values()).sort((a, b) => a.date.localeCompare(b.date))
+    })
+
+    if (isPeriodStart && savedFlow && savedFlow !== 'none') {
+      const endDate = addDays(savedDate, savedPeriodLen - 1)
+      setLocalEpisodes((prev) => {
+        const filtered = prev.filter((p) => p.start_date !== savedDate)
+        return [
+          ...filtered,
+          {
+            id: 'local-' + Date.now(),
+            start_date: savedDate,
+            end_date: endDate,
+            flow: savedFlow as any,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ].sort((a, b) => a.start_date.localeCompare(b.start_date))
+      })
+    }
+  }
 
   return (
     <div
@@ -303,7 +406,14 @@ export function CalendarGrid({ episodes, entries, prediction }: Props) {
         </a>
       </div>
 
-      <DaySheet date={selected} entry={selectedEntry} open={open} onOpenChange={setOpen} />
+      <DaySheet
+        date={selected}
+        entry={selectedEntry}
+        open={open}
+        onOpenChange={setOpen}
+        periodLength={periodLength}
+        onSaved={handleDaySaved}
+      />
     </div>
   )
 }
