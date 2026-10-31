@@ -19,7 +19,7 @@ const bodySchema = z.object({
   current: z.string().min(1),
   next: z
     .string()
-    .min(4, 'Use at least 4 numerical digits')
+    .min(1, 'PIN is required')
     .regex(/^\d+$/, 'PIN must contain numbers only'),
 })
 

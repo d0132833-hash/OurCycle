@@ -361,8 +361,8 @@ describe('Rigorous Feature & API Test Suite', () => {
   // Authentication Lifecycle & Numerical Vault PIN Security
   // --------------------------------------------------------------------------
   describe('Authentication Lifecycle & Vault Operations', () => {
-    it('creates vault with setup, unlocks via login, rejects non-numerical PINs, and logs out', async () => {
-      // Reject non-numerical or too-short PIN on setup
+    it('creates vault with setup, unlocks via login, rejects non-numerical characters, and logs out', async () => {
+      // Reject non-numerical characters on setup
       const nonNumericReq = new NextRequest('http://localhost:3000/api/auth/setup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' },
@@ -371,7 +371,7 @@ describe('Rigorous Feature & API Test Suite', () => {
       const nonNumericRes = await setupPost(nonNumericReq)
       expect(nonNumericRes.status).toBe(400)
 
-      // 1. Setup with valid numerical PIN
+      // 1. Setup with valid numerical PIN (unlimited length supported)
       const setupReq = new NextRequest('http://localhost:3000/api/auth/setup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' },

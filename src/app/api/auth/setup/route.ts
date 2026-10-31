@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 const bodySchema = z.object({
   code: z
     .string()
-    .min(4, 'Use at least 4 numerical digits')
+    .min(1, 'PIN is required')
     .regex(/^\d+$/, 'PIN must contain numbers only'),
 })
 

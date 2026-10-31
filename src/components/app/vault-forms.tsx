@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, Heart } from 'lucide-react'
 import { toast } from 'sonner'
@@ -8,47 +8,16 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 // Numerical Vault PIN UI shared by /login, /setup and Settings rotation.
+// Supports unlimited length numerical PINs.
+
 export function strengthOf(code: string): { score: 0 | 1 | 2 | 3 | 4; label: string; color: string } {
-  if (!code || code.length < 4) {
-    return { score: 0, label: 'Too short (min 4 digits)', color: 'bg-stone-300' }
+  if (!code || code.length === 0) {
+    return { score: 0, label: '', color: 'bg-stone-300' }
   }
   if (!/^\d+$/.test(code)) {
     return { score: 0, label: 'Numerical digits only', color: 'bg-rose-400' }
   }
-  // Check common weak patterns (all identical digits like 1111, 0000)
-  const isRepetitive = /^(\d)\1+$/.test(code)
-  // Check simple consecutive sequences like 1234, 4321
-  const isSequential = '01234567890123456789'.includes(code) || '98765432109876543210'.includes(code)
-
-  if (isRepetitive || isSequential) {
-    return { score: 1, label: 'Weak PIN (predictable)', color: 'bg-rose-400' }
-  }
-  if (code.length === 4) {
-    return { score: 3, label: 'Good 4-digit PIN', color: 'bg-lime-500' }
-  }
-  if (code.length === 5) {
-    return { score: 3, label: 'Strong 5-digit PIN', color: 'bg-emerald-500' }
-  }
-  return { score: 4, label: 'Very Strong PIN', color: 'bg-emerald-600' }
-}
-
-function StrengthMeter({ code }: { code: string }) {
-  const s = strengthOf(code)
-  return (
-    <div className="mt-2" aria-live="polite">
-      <div className="flex gap-1" aria-hidden>
-        {[0, 1, 2, 3].map((i) => (
-          <span
-            key={i}
-            className={`h-1.5 flex-1 rounded-full ${code.length === 0 ? 'bg-stone-200 dark:bg-stone-800' : i < s.score ? s.color : 'bg-stone-200 dark:bg-stone-800'}`}
-          />
-        ))}
-      </div>
-      <p className="mt-1 text-[11px] text-muted-foreground">
-        {code.length === 0 ? 'Enter at least 4 numerical digits' : s.label}
-      </p>
-    </div>
-  )
+  return { score: 4, label: 'Valid PIN', color: 'bg-emerald-500' }
 }
 
 function CodeInput({
@@ -188,10 +157,6 @@ export function SetupForm() {
       setError('PIN must contain numbers only')
       return
     }
-    if (code.length < 4) {
-      setError('Use at least 4 numerical digits')
-      return
-    }
     if (code !== confirm) {
       setError('The two PIN codes do not match')
       return
@@ -228,7 +193,6 @@ export function SetupForm() {
         placeholder="••••"
         autoFocus
       />
-      <StrengthMeter code={code} />
       <div className="mt-4">
         <CodeInput
           value={confirm}
@@ -244,7 +208,7 @@ export function SetupForm() {
       ) : null}
       <Button
         type="submit"
-        disabled={busy || code.length < 4 || confirm.length === 0}
+        disabled={busy || code.length === 0 || confirm.length === 0}
         className="mt-5 h-12 w-full rounded-full bg-primary text-base font-semibold text-primary-foreground"
       >
         {busy ? 'Creating vault…' : 'Create vault PIN'}
@@ -269,10 +233,6 @@ export function RotateForm() {
     if (busy) return
     if (!/^\d+$/.test(next)) {
       setMsg('New PIN must contain numbers only')
-      return
-    }
-    if (next.length < 4) {
-      setMsg('New PIN needs at least 4 digits')
       return
     }
     setBusy(true)
@@ -318,7 +278,6 @@ export function RotateForm() {
           label="New vault PIN"
           placeholder="••••"
         />
-        <StrengthMeter code={next} />
       </div>
       {msg ? (
         <p role="alert" className="text-sm text-destructive">
@@ -327,7 +286,7 @@ export function RotateForm() {
       ) : null}
       <Button
         type="submit"
-        disabled={busy || !current || next.length < 4}
+        disabled={busy || !current || !next}
         variant="outline"
         className="h-11 w-full rounded-full border-[rgba(225,29,72,0.3)] text-primary"
       >
