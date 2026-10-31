@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 // Numerical Vault PIN UI shared by /login, /setup and Settings rotation.
-// Supports unlimited length numerical PINs.
+// Supports unlimited length numerical PINs without any length hints.
 
 export function strengthOf(code: string): { score: 0 | 1 | 2 | 3 | 4; label: string; color: string } {
   if (!code || code.length === 0) {
@@ -25,13 +25,11 @@ function CodeInput({
   onChange,
   label,
   autoFocus,
-  placeholder,
 }: {
   value: string
   onChange: (v: string) => void
   label: string
   autoFocus?: boolean
-  placeholder?: string
 }) {
   const [show, setShow] = useState(false)
   return (
@@ -49,7 +47,6 @@ function CodeInput({
           }}
           autoFocus={autoFocus}
           autoComplete="current-password"
-          placeholder={placeholder ?? '••••'}
           className="h-12 rounded-xl border-[rgba(225,29,72,0.2)] bg-white/80 dark:bg-stone-900/80 pr-11 font-mono tracking-widest text-lg sm:text-xl text-center"
         />
         <button
@@ -121,7 +118,6 @@ export function LoginForm() {
         value={code}
         onChange={setCode}
         label="Vault PIN"
-        placeholder="••••"
         autoFocus
       />
       {error ? (
@@ -190,7 +186,6 @@ export function SetupForm() {
         value={code}
         onChange={setCode}
         label="Set your numerical PIN"
-        placeholder="••••"
         autoFocus
       />
       <div className="mt-4">
@@ -198,7 +193,6 @@ export function SetupForm() {
           value={confirm}
           onChange={setConfirm}
           label="Repeat PIN to confirm"
-          placeholder="••••"
         />
       </div>
       {error ? (
@@ -269,14 +263,12 @@ export function RotateForm() {
         value={current}
         onChange={setCurrent}
         label="Current vault PIN"
-        placeholder="••••"
       />
       <div>
         <CodeInput
           value={next}
           onChange={setNext}
           label="New vault PIN"
-          placeholder="••••"
         />
       </div>
       {msg ? (
