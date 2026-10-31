@@ -62,13 +62,17 @@ When authoring code, adhere to these fundamental principles:
 4. **Privacy & Zero Telemetry**:
    - Never introduce third-party trackers, external font CDNs, analytics beacons, or remote logging.
    - All fonts must remain self-hosted via `next/font`.
+5. **System Documentation Integrity**:
+   - **After making changes, update all the system markdown files & then push everything to github.**
+   - Keep `README.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `worklog.md`, and `CONTRIBUTING.md` current and accurate.
 
 ---
 
-## 4. Submitting a Pull Request
+## 4. Submitting Changes & Pushing to GitHub
 
-1. Create a feature branch: `git checkout -b feature/your-feature-name`.
+1. Create a feature branch (or work on main): `git checkout -b feature/your-feature-name`.
 2. Commit changes with semantic commit messages (`feat:`, `fix:`, `docs:`, `perf:`).
-3. Verify that `npx tsc --noEmit` and `npx vitest run` pass completely.
-4. Submit a Pull Request detailing the changes and user impact.
+3. **Update all system markdown files**: Ensure `worklog.md`, `CHANGELOG.md`, `README.md`, and `ARCHITECTURE.md` reflect the work done.
+4. Verify that `npm test` (`npx vitest run`) and `npm run build` pass completely with zero errors.
+5. Push everything to GitHub (`git push origin main` or submit a Pull Request).
 

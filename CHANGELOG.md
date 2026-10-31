@@ -4,6 +4,25 @@ All notable changes and architectural features introduced to the Our Cycle codeb
 
 ---
 
+## [0.3.1] — 2026-10-31
+
+### ✏️ Today Log Editing & System Workflow Enhancements
+
+#### 1. Dynamic "Edit Today's Log" & Logged Preview Card (`period-actions.tsx`)
+- When an entry is already logged for today, the action button dynamically converts from `"Log today"` to `"Edit today's log"` with a `PencilLine` icon.
+- Added a dedicated **"Logged for Today"** preview card on "Her View" rendering live summary chips for recorded flow, mood, energy, libido, symptoms, and sleep hours, with an explicit 1-tap **"Edit"** button.
+- Tapping opens the `DaySheet` drawer pre-populated with all saved metrics for seamless updating or clearing.
+
+#### 2. Day Sheet Drawer Polish (`day-sheet.tsx`)
+- Drawer header dynamically displays an `"Editing Entry"` badge when modifying an existing logged day.
+- Primary CTA updates dynamically to `"Update entry"` (instead of generic `"Save day"`) when updating a day entry.
+- Maintained the `"Clear"` action allowing users to wipe entries cleanly.
+
+#### 3. Standardized Markdown Maintenance Protocol
+- Added mandatory repository rule across system markdown files: *"After making changes, update all the system markdown files & then push everything to github"*.
+
+---
+
 ## [0.3.0] — 2026-10-30
 
 ### 🚀 Major Feature Additions

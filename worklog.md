@@ -25,3 +25,21 @@ Stage Summary:
 - App fully implemented and verified; dev server healthy on port 3000; 25/25 unit tests pass; lint + tsc clean (app code)
 - Demo state: local store seeded with 8 cycles; numerical vault PIN configured for preview login
 - Deliverables: full src/, supabase/migration.sql, scripts/seed.ts, scripts/gen-icons.mjs, tests/predictions.test.ts, README.md
+
+---
+Task ID: 2
+Agent: Antigravity
+Task: Enhance Today logging edit UX, clarify partner features/notifications/separation, enforce system markdown documentation workflow, and push changes to GitHub.
+
+Work Log:
+- Addressed user questions regarding the Partner companion location (perspective toggle on Today), notification architecture (privacy-first calendar .ics reminders, real-time SOS badges, 1-tap SMS/WhatsApp check-ins), and partner separation model (shared encrypted vault with Her View vs Partner View perspectives).
+- Enhanced `src/components/app/period-actions.tsx`:
+  - Transformed the action button to dynamically display "Edit today's log" with a PencilLine icon when an entry is recorded for today.
+  - Implemented a "Logged for Today" live preview card displaying recorded symptom chips (flow, mood, energy, libido, symptoms, sleep) with an explicit 1-tap "Edit" button that opens the pre-filled DaySheet drawer.
+- Enhanced `src/components/app/day-sheet.tsx`:
+  - Added an "Editing Entry" badge in the drawer header when editing an existing day log.
+  - Changed the primary CTA from "Save day" to "Update entry" when modifying a day.
+  - Verified clear/delete entry capability.
+- Documented the system rule across `README.md`, `CONTRIBUTING.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, and `worklog.md`: "After making changes, update all the system markdown files & then push everything to github".
+- Tested and verified: vitest suite (80/80 passing tests) and Next.js 16 build (`npm run build` compiled cleanly).
+- Pushed changes to GitHub remote (`origin main`).

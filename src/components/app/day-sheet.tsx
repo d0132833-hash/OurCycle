@@ -288,8 +288,13 @@ export function DaySheet({ date, entry, open, onOpenChange }: Props) {
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="mx-auto max-w-md max-h-[92dvh] flex flex-col">
         <DrawerHeader className="shrink-0 pb-2">
-          <DrawerTitle className="font-display text-xl">
-            {date ? fmtShort(date) : 'Log day'}
+          <DrawerTitle className="font-display text-xl flex items-center justify-between">
+            <span>{date ? fmtShort(date) : 'Log day'}</span>
+            {entry ? (
+              <span className="text-xs font-normal px-2.5 py-0.5 rounded-full bg-primary/10 text-primary">
+                Editing Entry
+              </span>
+            ) : null}
           </DrawerTitle>
           <DrawerDescription>Everything is private — only your vault can see this.</DrawerDescription>
         </DrawerHeader>
@@ -567,7 +572,7 @@ export function DaySheet({ date, entry, open, onOpenChange }: Props) {
             disabled={saving || !dirty}
             className="ml-auto h-11 flex-1 rounded-full bg-primary text-base font-semibold text-primary-foreground shadow-md transition-transform active:scale-95 disabled:opacity-50"
           >
-            {saving ? 'Saving…' : 'Save day'}
+            {saving ? 'Saving…' : entry ? 'Update entry' : 'Save day'}
           </Button>
         </div>
       </DrawerContent>

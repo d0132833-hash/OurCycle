@@ -88,9 +88,11 @@ Without Supabase env vars the app transparently falls back to a JSON file store 
 
 ---
 
-## Pushing changes to GitHub
+## Workflow & Pushing Changes to GitHub
 
-After making code updates, styling tweaks, or new features, follow these steps to verify and push everything to GitHub:
+> **Core Rule**: After making changes, update all the system markdown files (`README.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `worklog.md`, `CONTRIBUTING.md`) & then push everything to github.
+
+After making code updates, styling tweaks, or new features, follow these steps to verify, document, and push everything to GitHub:
 
 1. **Run tests and build verification:**
    ```bash
@@ -98,22 +100,25 @@ After making code updates, styling tweaks, or new features, follow these steps t
    npm run build   # verifies Next.js compilation and type safety
    ```
 
-2. **Stage modified and new files:**
+2. **Update all system markdown files:**
+   After making changes, update all the system markdown files to reflect new features, UI enhancements, and work logs before pushing.
+
+3. **Stage modified and new files:**
    ```bash
    git add .
    ```
 
-3. **Check staged files:**
+4. **Check staged files:**
    ```bash
    git status
    ```
 
-4. **Commit with a descriptive message:**
+5. **Commit with a descriptive message:**
    ```bash
    git commit -m "feat: description of changes"
    ```
 
-5. **Push everything to GitHub:**
+6. **Push everything to GitHub:**
    ```bash
    git push origin main
    ```

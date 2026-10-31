@@ -80,7 +80,7 @@ The application operates against a uniform `Store` interface (`src/lib/storage.t
 - **Mutations Queue (`src/lib/client/offline-queue.ts`)**: Day logs and period episode writes performed while offline are enqueued in `localStorage` and automatically flushed in chronological order upon reconnect.
 
 ### D. Multi-Perspective & Care System
-- **Her View**: Focuses on symptom logging, tracking, and countdown forecasting.
+- **Her View (`src/components/app/today-view.tsx`, `period-actions.tsx`)**: Focuses on symptom logging, cycle tracking, countdown forecasting, and real-time entry editing. When an entry has been recorded for today, the primary button switches dynamically to *"Edit today's log"* and renders a *"Logged for Today"* preview card with symptom chips, linking to the pre-filled `DaySheet` drawer for instant updates or clears.
 - **Partner View (`src/components/app/partner-view.tsx`)**: Translates biological phase changes into actionable empathy guidance, real-time symptom alerts, and unprompted support suggestions.
 
 ---
@@ -106,4 +106,11 @@ OurCycle/
 │   └── migration.sql       # Canonical database schema & RLS definitions
 └── tests/                  # Vitest comprehensive unit test suites
 ```
+
+---
+
+## 4. Maintenance & Repository Lifecycle Rule
+
+> **Mandatory Developer Rule**: After making changes, update all the system markdown files (`README.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `worklog.md`, `CONTRIBUTING.md`) & then push everything to github.
+
 
